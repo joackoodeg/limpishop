@@ -1,13 +1,20 @@
-import connectDB from '../../../lib/mongodb';
-import Category from '../../../models/Category';
+import { db } from '@/lib/db';
+import { categories } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+
+function formatCategory(cat) {
+  return {
+    ...cat,
+    _id: cat.id,
+    image: { url: cat.imageUrl, publicId: cat.imagePublicId },
+  };
+}
 
 // GET - Obtener todas las categorías
 export async function GET() {
   try {
-    await connectDB();
-    const categories = await Category.find({}).sort({ name: 1 });
-    
-    return Response.json(categories);
+    const allCategories = await db.select().from(categories).orderBy(categories.name);
+    return Response.json(allCategories.map(formatCategory));
   } catch (error) {
     console.error('Error fetching categories:', error);
     return Response.json({ error: 'Error fetching categories' }, { status: 500 });
@@ -18,32 +25,25 @@ export async function GET() {
 export async function POST(request) {
   try {
     const { name, description } = await request.json();
-    
+
     if (!name) {
       return Response.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    await connectDB();
-    
     // Verificar si ya existe una categoría con el mismo nombre
-    const existingCategory = await Category.findOne({ name: name.trim() });
+    const [existingCategory] = await db.select().from(categories).where(eq(categories.name, name.trim()));
     if (existingCategory) {
       return Response.json({ error: 'Category with this name already exists' }, { status: 400 });
     }
 
-    const category = new Category({
+    const [category] = await db.insert(categories).values({
       name: name.trim(),
-      description: description?.trim() || ''
-    });
+      description: description?.trim() || '',
+    }).returning();
 
-    await category.save();
-    
-    return Response.json(category, { status: 201 });
+    return Response.json(formatCategory(category), { status: 201 });
   } catch (error) {
     console.error('Error creating category:', error);
-    if (error.code === 11000) {
-      return Response.json({ error: 'Category with this name already exists' }, { status: 400 });
-    }
     return Response.json({ error: 'Error creating category' }, { status: 500 });
   }
 }

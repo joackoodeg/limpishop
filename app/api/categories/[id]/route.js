@@ -1,26 +1,33 @@
-import connectDB from '../../../../lib/mongodb';
-import Category from '../../../../models/Category';
-import Product from '../../../../models/Product';
-import { deleteImage } from '../../../../lib/cloudinary';
-import mongoose from 'mongoose';
+import { db } from '@/lib/db';
+import { categories, products } from '@/lib/db/schema';
+import { eq, and, ne } from 'drizzle-orm';
+import { deleteImage } from '@/lib/cloudinary';
+
+function formatCategory(cat) {
+  return {
+    ...cat,
+    _id: cat.id,
+    image: { url: cat.imageUrl, publicId: cat.imagePublicId },
+  };
+}
 
 // GET - Obtener categoría por ID
 export async function GET(request, { params }) {
   try {
     const { id } = await params;
-    
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const numId = Number(id);
+
+    if (isNaN(numId)) {
       return Response.json({ error: 'Invalid category ID' }, { status: 400 });
     }
 
-    await connectDB();
-    const category = await Category.findById(id);
-    
+    const [category] = await db.select().from(categories).where(eq(categories.id, numId));
+
     if (!category) {
       return Response.json({ error: 'Category not found' }, { status: 404 });
     }
-    
-    return Response.json(category);
+
+    return Response.json(formatCategory(category));
   } catch (error) {
     console.error('Error fetching category:', error);
     return Response.json({ error: 'Error fetching category' }, { status: 500 });
@@ -31,9 +38,10 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const { id } = await params;
+    const numId = Number(id);
     const { name, description } = await request.json();
-    
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+
+    if (isNaN(numId)) {
       return Response.json({ error: 'Invalid category ID' }, { status: 400 });
     }
 
@@ -41,43 +49,33 @@ export async function PUT(request, { params }) {
       return Response.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    await connectDB();
-    
     // Verificar si ya existe otra categoría con el mismo nombre
-    const existingCategory = await Category.findOne({ 
-      name: name.trim(),
-      _id: { $ne: id }
-    });
-    
+    const [existingCategory] = await db.select().from(categories)
+      .where(and(eq(categories.name, name.trim()), ne(categories.id, numId)));
+
     if (existingCategory) {
       return Response.json({ error: 'Category with this name already exists' }, { status: 400 });
     }
 
-    const category = await Category.findByIdAndUpdate(
-      id,
-      {
-        name: name.trim(),
-        description: description?.trim() || ''
-      },
-      { new: true, runValidators: true }
-    );
+    const [category] = await db.update(categories).set({
+      name: name.trim(),
+      description: description?.trim() || '',
+      updatedAt: new Date().toISOString(),
+    }).where(eq(categories.id, numId)).returning();
 
     if (!category) {
       return Response.json({ error: 'Category not found' }, { status: 404 });
     }
 
     // Actualizar categoryName en productos que usan esta categoría
-    await Product.updateMany(
-      { categoryId: id },
-      { categoryName: category.name }
-    );
+    await db.update(products).set({
+      categoryName: category.name,
+      updatedAt: new Date().toISOString(),
+    }).where(eq(products.categoryId, numId));
 
-    return Response.json({ message: 'Category updated successfully', category });
+    return Response.json({ message: 'Category updated successfully', category: formatCategory(category) });
   } catch (error) {
     console.error('Error updating category:', error);
-    if (error.code === 11000) {
-      return Response.json({ error: 'Category with this name already exists' }, { status: 400 });
-    }
     return Response.json({ error: 'Error updating category' }, { status: 500 });
   }
 }
@@ -86,32 +84,31 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
-    
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const numId = Number(id);
+
+    if (isNaN(numId)) {
       return Response.json({ error: 'Invalid category ID' }, { status: 400 });
     }
 
-    await connectDB();
-    
     // Verificar si existen productos asociados a esta categoría
-    const productsWithCategory = await Product.findOne({ categoryId: id });
+    const [productsWithCategory] = await db.select().from(products).where(eq(products.categoryId, numId)).limit(1);
     if (productsWithCategory) {
-      return Response.json({ 
-        error: 'Cannot delete category. There are products associated with this category.' 
+      return Response.json({
+        error: 'Cannot delete category. There are products associated with this category.',
       }, { status: 400 });
     }
 
-    const category = await Category.findById(id);
+    const [category] = await db.select().from(categories).where(eq(categories.id, numId));
     if (!category) {
       return Response.json({ error: 'Category not found' }, { status: 404 });
     }
 
     // Delete image from Cloudinary if exists
-    if (category.image?.publicId) {
-      await deleteImage(category.image.publicId);
+    if (category.imagePublicId) {
+      await deleteImage(category.imagePublicId);
     }
 
-    await Category.findByIdAndDelete(id);
+    await db.delete(categories).where(eq(categories.id, numId));
 
     return Response.json({ message: 'Category deleted successfully' });
   } catch (error) {

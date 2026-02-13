@@ -1,44 +1,39 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import connectDB from '@/lib/mongodb';
-import Sale from '@/models/Sale';
-import Product from '@/models/Product';
+import { db } from '@/lib/db';
+import { sales, saleItems, products } from '@/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
 
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
-    
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const numId = Number(id);
+
+    if (isNaN(numId)) {
       return NextResponse.json({ error: 'Invalid sale ID' }, { status: 400 });
     }
-    
-    await connectDB();
 
-    // Find the sale to get the productId and quantity
-    const sale = await Sale.findById(id);
+    // Find the sale
+    const [sale] = await db.select().from(sales).where(eq(sales.id, numId));
     if (!sale) {
       return NextResponse.json({ error: 'Sale not found' }, { status: 404 });
     }
 
-    // Check if it's a modern multi-product sale or legacy single-product sale
-    if (sale.items && Array.isArray(sale.items)) {
-      // Modern multi-product sale - restore stock for each item
-      for (const item of sale.items) {
-        await Product.findByIdAndUpdate(
-          item.productId,
-          { $inc: { stock: +(Number(item.quantity) * Number(item.size)) } }
-        );
+    // Get sale items to restore stock
+    const items = await db.select().from(saleItems).where(eq(saleItems.saleId, numId));
+
+    // Restore stock for each item
+    for (const item of items) {
+      if (item.productId) {
+        const stockIncrement = Number(item.quantity) * Number(item.size || 1);
+        await db.update(products).set({
+          stock: sql`${products.stock} + ${stockIncrement}`,
+          updatedAt: new Date().toISOString(),
+        }).where(eq(products.id, item.productId));
       }
-    } else {
-      // Legacy single-product sale - restore stock for single product
-      await Product.findByIdAndUpdate(
-        sale.productId,
-        { $inc: { stock: +Number(sale.quantity) } }
-      );
     }
 
-    // Delete the sale
-    await Sale.findByIdAndDelete(id);
+    // Delete the sale (sale_items cascade-deleted)
+    await db.delete(sales).where(eq(sales.id, numId));
 
     return NextResponse.json({ message: 'Sale deleted' }, { status: 200 });
   } catch (e) {

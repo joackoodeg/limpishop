@@ -1,25 +1,35 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import connectDB from '@/lib/mongodb';
-import Product from '@/models/Product';
-import Category from '@/models/Category';
+import { db } from '@/lib/db';
+import { products, productPrices, categories } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+
+function formatProduct(product, prices) {
+  return {
+    ...product,
+    _id: product.id,
+    image: { url: product.imageUrl, publicId: product.imagePublicId },
+    prices: prices.map(p => ({ quantity: p.quantity, price: p.price })),
+  };
+}
 
 export async function GET(request, context) {
   try {
-    await connectDB();
     const { id } = await context.params;
-    
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const numId = Number(id);
+
+    if (isNaN(numId)) {
       return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
     }
-    
-    const product = await Product.findById(id);
-    
+
+    const [product] = await db.select().from(products).where(eq(products.id, numId));
+
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
-    
-    return NextResponse.json(product);
+
+    const prices = await db.select().from(productPrices).where(eq(productPrices.productId, numId));
+
+    return NextResponse.json(formatProduct(product, prices));
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: 'Error fetching product' }, { status: 500 });
@@ -28,49 +38,57 @@ export async function GET(request, context) {
 
 export async function PUT(request, context) {
   try {
-    await connectDB();
     const { id } = await context.params;
+    const numId = Number(id);
     const { name, prices, cost, stock, description, categoryId, active, featured } = await request.json();
-    
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+
+    if (isNaN(numId)) {
       return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
     }
-    
-    const updateData = { 
-      name, 
-      prices, 
-      cost: Number(cost), 
-      stock: Number(stock), 
+
+    const updateData = {
+      name,
+      cost: Number(cost),
+      stock: Number(stock),
       description,
       active: active !== undefined ? active : true,
-      featured: featured !== undefined ? featured : false
+      featured: featured !== undefined ? featured : false,
+      updatedAt: new Date().toISOString(),
     };
 
     // Manejar la categoría
     if (categoryId === null || categoryId === '') {
-      // Remover categoría
       updateData.categoryId = null;
       updateData.categoryName = null;
-    } else if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) {
-      // Validar y agregar categoría
-      const category = await Category.findById(categoryId);
+    } else if (categoryId) {
+      const [category] = await db.select().from(categories).where(eq(categories.id, Number(categoryId)));
       if (category) {
-        updateData.categoryId = categoryId;
+        updateData.categoryId = category.id;
         updateData.categoryName = category.name;
       }
     }
 
-    const product = await Product.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+    const [updated] = await db.update(products).set(updateData).where(eq(products.id, numId)).returning();
 
-    if (!product) {
+    if (!updated) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'Product updated', product });
+    // Replace prices: delete old, insert new
+    await db.delete(productPrices).where(eq(productPrices.productId, numId));
+    if (prices && Array.isArray(prices) && prices.length > 0) {
+      await db.insert(productPrices).values(
+        prices.map(p => ({
+          productId: numId,
+          quantity: Number(p.quantity),
+          price: Number(p.price),
+        }))
+      );
+    }
+
+    const newPrices = await db.select().from(productPrices).where(eq(productPrices.productId, numId));
+
+    return NextResponse.json({ message: 'Product updated', product: formatProduct(updated, newPrices) });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: 'Error updating product' }, { status: 500 });
@@ -79,19 +97,21 @@ export async function PUT(request, context) {
 
 export async function DELETE(request, context) {
   try {
-    await connectDB();
     const { id } = await context.params;
-    
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const numId = Number(id);
+
+    if (isNaN(numId)) {
       return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
     }
-    
-    const product = await Product.findByIdAndDelete(id);
-    
+
+    const [product] = await db.delete(products).where(eq(products.id, numId)).returning();
+
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
-    
+
+    // productPrices are cascade-deleted
+
     return NextResponse.json({ message: 'Product deleted' });
   } catch (e) {
     console.error(e);
