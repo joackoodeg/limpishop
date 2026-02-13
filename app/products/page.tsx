@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import ProductImage from '../components/ProductImage';
+import { toast } from 'sonner';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import PageHeader from '../components/PageHeader';
+import StatusBadge, { stockStatus, stockLabel } from '../components/StatusBadge';
+import ConfirmDialog from '../components/ConfirmDialog';
+import EmptyState from '../components/EmptyState';
 
 interface Price {
   quantity: number;
@@ -23,12 +31,13 @@ interface Product {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState({
-    active: 'all', // 'all', 'active', 'inactive'
-    stock: 'all', // 'all', 'inStock', 'lowStock', 'outOfStock'
-    category: 'all', // 'all' or categoryId
-    featured: 'all' // 'all', 'featured', 'notFeatured'
+    active: 'all',
+    stock: 'all',
+    category: 'all',
+    featured: 'all'
   });
   const [categories, setCategories] = useState([]);
 
@@ -38,14 +47,14 @@ export default function ProductsPage() {
   }, []);
 
   async function fetchProducts() {
-    const res = await fetch('/api/products');
-    const data = await res.json();
-    setProducts(data);
+    try {
+      const res = await fetch('/api/products');
+      const data = await res.json();
+      setProducts(data);
+    } finally {
+      setLoading(false);
+    }
   }
-
-  useEffect(()=>{
-    console.log('Products updated:', products);
-  }, [products])
 
   async function fetchCategories() {
     try {
@@ -58,291 +67,229 @@ export default function ProductsPage() {
   }
 
   async function handleDelete(productId: number) {
-    const ok = confirm('¿Seguro que deseas eliminar este producto?');
-    if (ok) {
-      await fetch(`/api/products/${productId}`, {
-        method: 'DELETE',
-      });
-      fetchProducts();
-    }
+    await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+    toast.success('Producto eliminado');
+    fetchProducts();
   }
 
   async function handleToggleActive(productId: number) {
     try {
-      const res = await fetch(`/api/products/${productId}/toggle-active`, {
-        method: 'PATCH',
-      });
+      const res = await fetch(`/api/products/${productId}/toggle-active`, { method: 'PATCH' });
       if (res.ok) {
         fetchProducts();
+        toast.success('Estado actualizado');
       }
-    } catch (error) {
-      console.error('Error toggling product status:', error);
+    } catch {
+      toast.error('Error al actualizar estado');
     }
   }
 
   async function handleToggleFeatured(productId: number) {
     try {
-      const res = await fetch(`/api/products/${productId}/toggle-featured`, {
-        method: 'PATCH',
-      });
+      const res = await fetch(`/api/products/${productId}/toggle-featured`, { method: 'PATCH' });
       if (res.ok) {
         fetchProducts();
+        toast.success('Destacado actualizado');
       }
-    } catch (error) {
-      console.error('Error toggling product featured status:', error);
+    } catch {
+      toast.error('Error al actualizar destacado');
     }
   }
 
   const filteredProducts = products.filter(product => {
-    // Filtro de búsqueda por nombre
     const matchesQuery = product.name.toLowerCase().includes(query.toLowerCase());
-    
-    // Filtro de estado activo/inactivo
-    const matchesActive = filters.active === 'all' || 
+    const matchesActive = filters.active === 'all' ||
       (filters.active === 'active' && product.active) ||
       (filters.active === 'inactive' && !product.active);
-    
-    // Filtro de stock
     let matchesStock = true;
-    if (filters.stock === 'inStock') {
-      matchesStock = product.stock > 5; // Más de 5 unidades
-    } else if (filters.stock === 'lowStock') {
-      matchesStock = product.stock > 0 && product.stock <= 5; // Entre 1 y 5 unidades
-    } else if (filters.stock === 'outOfStock') {
-      matchesStock = product.stock === 0; // Sin stock
-    }
-    
-    // Filtro de categoría
-    const matchesCategory = filters.category === 'all' || 
+    if (filters.stock === 'inStock') matchesStock = product.stock > 5;
+    else if (filters.stock === 'lowStock') matchesStock = product.stock > 0 && product.stock <= 5;
+    else if (filters.stock === 'outOfStock') matchesStock = product.stock === 0;
+    const matchesCategory = filters.category === 'all' ||
       String(product.categoryId) === filters.category ||
       (filters.category === 'uncategorized' && !product.categoryId);
-    
-    // Filtro de destacado
     const matchesFeatured = filters.featured === 'all' ||
       (filters.featured === 'featured' && product.featured) ||
       (filters.featured === 'notFeatured' && !product.featured);
-    
     return matchesQuery && matchesActive && matchesStock && matchesCategory && matchesFeatured;
   });
 
   const handleFilterChange = (filterType: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: value
-    }));
+    setFilters(prev => ({ ...prev, [filterType]: value }));
   };
 
   const clearFilters = () => {
-    setFilters({
-      active: 'all',
-      stock: 'all',
-      category: 'all',
-      featured: 'all'
-    });
+    setFilters({ active: 'all', stock: 'all', category: 'all', featured: 'all' });
     setQuery('');
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">Productos</h1>
-      
-      {/* Botones de acción principales */}
-      <div className="mb-4 flex flex-col md:flex-row md:items-center gap-4">
-        <Link href="/products/new">
-          <button className="bg-blue-500 text-white px-4 py-2 rounded">
-            Agregar Producto
-          </button>
-        </Link>
-        <Link href="/sales/new">
-          <button className="bg-green-500 text-white px-4 py-2 rounded">
-            Realizar Venta
-          </button>
-        </Link>
-        <button
-          onClick={clearFilters}
-          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-        >
-          Limpiar Filtros
-        </button>
-      </div>
+    <div>
+      <PageHeader title="Productos">
+        <Button variant="outline" onClick={clearFilters}>Limpiar Filtros</Button>
+        <Button variant="secondary" asChild>
+          <Link href="/sales/new">Realizar Venta</Link>
+        </Button>
+        <Button asChild>
+          <Link href="/products/new">Agregar Producto</Link>
+        </Button>
+      </PageHeader>
 
-      {/* Barra de búsqueda */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Buscar productos por nombre..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
-        />
-      </div>
+      {/* Search */}
+      <Input
+        type="text"
+        placeholder="Buscar productos por nombre..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="mb-4"
+      />
 
-      {/* Filtros */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-        <h3 className="text-lg font-medium mb-3">Filtros</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          
-          {/* Filtro de Estado */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+      {/* Filters */}
+      <Card className="mb-6">
+        <CardContent className="pt-4">
+          <h3 className="text-sm font-medium mb-3">Filtros</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <select
               value={filters.active}
               onChange={(e) => handleFilterChange('active', e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              <option value="all">Todos</option>
+              <option value="all">Estado: Todos</option>
               <option value="active">Activos</option>
               <option value="inactive">Inactivos</option>
             </select>
-          </div>
-
-          {/* Filtro de Stock */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
             <select
               value={filters.stock}
               onChange={(e) => handleFilterChange('stock', e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              <option value="all">Todos</option>
+              <option value="all">Stock: Todos</option>
               <option value="inStock">En Stock (&gt;5)</option>
               <option value="lowStock">Poco Stock (1-5)</option>
               <option value="outOfStock">Sin Stock (0)</option>
             </select>
-          </div>
-
-          {/* Filtro de Categoría */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
             <select
               value={filters.category}
               onChange={(e) => handleFilterChange('category', e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              <option value="all">Todas</option>
+              <option value="all">Categoría: Todas</option>
               <option value="uncategorized">Sin Categoría</option>
-              {categories.map((category: any) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
+              {categories.map((cat: any) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
-          </div>
-
-          {/* Filtro de Destacado */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Destacado</label>
             <select
               value={filters.featured}
               onChange={(e) => handleFilterChange('featured', e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              <option value="all">Todos</option>
+              <option value="all">Destacado: Todos</option>
               <option value="featured">Destacados</option>
               <option value="notFeatured">No destacados</option>
             </select>
           </div>
-        </div>
-        
-        {/* Contador de resultados */}
-        <div className="mt-3 text-sm text-gray-600">
-          Mostrando {filteredProducts.length} de {products.length} productos
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProducts.map((product) => (
-          <div key={product.id} className={`border rounded-lg p-4 shadow-sm relative ${product.active ? 'bg-white' : 'bg-gray-100'}`}>
-            {/* Badges en la esquina superior derecha */}
-            <div className="absolute top-2 right-2 flex gap-1 flex-col items-end">
-              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                product.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
-                {product.active ? 'Activo' : 'Inactivo'}
-              </span>
-              {product.featured && (
-                <span className="bg-yellow-400 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">
-                  ⭐ Destacado
-                </span>
-              )}
-            </div>
-            <div className="flex justify-between items-start mb-2 mr-24">
-              <h2 className="text-xl font-semibold">{product.name}</h2>
-            </div>
-            {product.categoryName && (
-              <p className="text-sm text-blue-600 mb-2">📁 {product.categoryName}</p>
-            )}
-            <p className="text-gray-600 mb-3">{product.description}</p>
-            <div className="mb-3">
-              <p className="text-sm font-medium text-gray-700 mb-1">Precios:</p>
-              <ul className="text-sm text-gray-600">
-                {product.prices && product.prices.map((p, i) => (
-                  <li key={i}>{p.quantity} por ${p.price}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="mb-4">
-              <span className={`text-sm font-medium px-2 py-1 rounded ${
-                product.stock === 0 
-                  ? 'bg-red-100 text-red-800' 
-                  : product.stock <= 5 
-                  ? 'bg-yellow-100 text-yellow-800' 
-                  : 'bg-green-100 text-green-800'
-              }`}>
-                Stock: {product.stock}
-                {product.stock === 0 && ' (Agotado)'}
-                {product.stock > 0 && product.stock <= 5 && ' (Poco stock)'}
-              </span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <Link href={`/products/${product.id}`}>
-                <button className="bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
-                  Ver
-                </button>
-              </Link>
-              <Link href={`/products/${product.id}/edit`}>
-                <button className="bg-yellow-500 text-white px-3 py-2 rounded text-sm hover:bg-yellow-600">
-                  Editar
-                </button>
-              </Link>
-              <button
-                onClick={() => handleToggleActive(product.id)}
-                className={`px-3 py-2 rounded text-sm font-medium ${
-                  product.active 
-                    ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-                    : 'bg-green-500 hover:bg-green-600 text-white'
-                }`}
-              >
-                {product.active ? 'Desactivar' : 'Activar'}
-              </button>
-              <button
-                onClick={() => handleToggleFeatured(product.id)}
-                className={`px-3 py-2 rounded text-sm font-medium ${
-                  product.featured 
-                    ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
-                    : 'bg-gray-500 hover:bg-gray-600 text-white'
-                }`}
-              >
-                {product.featured ? 'Quitar destacado' : 'Destacar'}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {filteredProducts.length === 0 && products.length > 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <p className="text-lg mb-2">No se encontraron productos con los filtros aplicados</p>
-          <button
-            onClick={clearFilters}
-            className="text-blue-500 hover:text-blue-700 underline"
-          >
-            Limpiar filtros
-          </button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Mostrando {filteredProducts.length} de {products.length} productos
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Loading skeletons */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="pt-4 space-y-3">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
-      {products.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No hay productos registrados
+
+      {/* Products grid */}
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredProducts.map((product) => (
+            <Card key={product.id} className={`relative ${!product.active ? 'opacity-60' : ''}`}>
+              <CardContent className="pt-4">
+                {/* Badges */}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  <StatusBadge type={product.active ? 'active' : 'inactive'} />
+                  {product.featured && <StatusBadge type="featured" />}
+                  <StatusBadge type={stockStatus(product.stock)} label={stockLabel(product.stock)} />
+                </div>
+
+                {/* Name & category */}
+                <h2 className="text-lg font-semibold mt-2">{product.name}</h2>
+                {product.categoryName && (
+                  <p className="text-sm text-primary">📁 {product.categoryName}</p>
+                )}
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
+
+                {/* Prices */}
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Precios:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {product.prices?.map((p, i) => (
+                      <span key={i} className="text-xs bg-muted px-2 py-1 rounded">
+                        {p.quantity} → ${p.price}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 flex-wrap mt-4">
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={`/products/${product.id}`}>Ver</Link>
+                  </Button>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={`/products/${product.id}/edit`}>Editar</Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={product.active ? 'secondary' : 'default'}
+                    onClick={() => handleToggleActive(product.id)}
+                  >
+                    {product.active ? 'Desactivar' : 'Activar'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={product.featured ? 'secondary' : 'outline'}
+                    onClick={() => handleToggleFeatured(product.id)}
+                  >
+                    {product.featured ? 'Quitar ⭐' : '⭐'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
+      )}
+
+      {!loading && filteredProducts.length === 0 && products.length > 0 && (
+        <EmptyState
+          icon="🔍"
+          title="No se encontraron productos"
+          description="Prueba ajustando los filtros"
+          actionLabel="Limpiar filtros"
+          onAction={clearFilters}
+        />
+      )}
+
+      {!loading && products.length === 0 && (
+        <EmptyState
+          icon="📦"
+          title="No hay productos registrados"
+          description="Comienza agregando tu primer producto"
+          actionLabel="Agregar Producto"
+          actionHref="/products/new"
+        />
       )}
     </div>
   );

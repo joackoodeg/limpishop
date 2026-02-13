@@ -1,28 +1,140 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface DashboardStats {
+  totalProducts: number;
+  lowStockProducts: number;
+  todaySales: number;
+  todayRevenue: number;
+}
+
+const quickLinks = [
+  { href: '/products', label: 'Productos', icon: '📦', description: 'Gestionar catálogo' },
+  { href: '/sales/new', label: 'Nueva Venta', icon: '🛒', description: 'Registrar venta' },
+  { href: '/categories', label: 'Categorías', icon: '📁', description: 'Organizar productos' },
+  { href: '/combos', label: 'Combos', icon: '🎁', description: 'Ofertas especiales' },
+  { href: '/sales', label: 'Ventas', icon: '📊', description: 'Historial de ventas' },
+  { href: '/reports', label: 'Reportes', icon: '📄', description: 'Generar PDF' },
+];
 
 export default function HomePage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [productsRes, summaryRes] = await Promise.all([
+          fetch('/api/products'),
+          fetch('/api/sales/summary?from=' + new Date().toISOString().split('T')[0]),
+        ]);
+        const products = await productsRes.json();
+        const summary = await summaryRes.json();
+
+        setStats({
+          totalProducts: products.length,
+          lowStockProducts: products.filter((p: any) => p.stock <= 5 && p.stock > 0).length,
+          todaySales: summary.overall?.units || 0,
+          todayRevenue: summary.overall?.revenue || 0,
+        });
+      } catch {
+        setStats({ totalProducts: 0, lowStockProducts: 0, todaySales: 0, todayRevenue: 0 });
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
   return (
-    <div className="text-center">
-      <h1 className="text-4xl font-bold mb-4">Bienvenido a Limpi</h1>
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-        <Link href="/products" className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 w-full sm:w-auto">
-          Productos
-        </Link>
-        <Link href="/categories" className="bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600 w-full sm:w-auto">
-          Categorías
-        </Link>
-        <Link href="/sales" className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 w-full sm:w-auto">
-          Ver Ventas
-        </Link>
-        <Link href="/reports" className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 w-full sm:w-auto">
-          Ver Reportes
-        </Link>
-        <Link href="/sales/summary" className="bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 w-full sm:w-auto">
-          Ver Resumen de Ventas
-        </Link>
-        <Link href="/combos" className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 w-full sm:w-auto">
-          Gestionar Combos
-        </Link>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">Bienvenido a Limpi — resumen del día</p>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Productos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.totalProducts}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Stock Bajo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-amber-600">{stats?.lowStockProducts}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Ventas Hoy
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.todaySales} uds</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Ingresos Hoy
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-emerald-600">
+                  ${stats?.todayRevenue.toFixed(2)}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+
+      {/* Quick Links */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Accesos rápidos</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {quickLinks.map((link) => (
+            <Link key={link.href} href={link.href}>
+              <Card className="h-full hover:bg-accent/50 transition-colors cursor-pointer">
+                <CardContent className="flex flex-col items-center justify-center text-center pt-6 pb-4">
+                  <span className="text-3xl mb-2">{link.icon}</span>
+                  <span className="font-medium text-sm">{link.label}</span>
+                  <span className="text-xs text-muted-foreground mt-1">{link.description}</span>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

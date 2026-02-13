@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import PageHeader from '../../components/PageHeader';
 
 interface Product {
   id: number;
@@ -37,8 +43,6 @@ export default function NewSalePage() {
     const res = await fetch('/api/products');
     const data = await res.json();
     setProducts(data);
-
-    // Initialize selected variants to first option for each product
     const initialVariants: { [key: string]: number } = {};
     data.forEach((product: Product) => {
       if (product.prices && product.prices.length > 0) {
@@ -49,64 +53,47 @@ export default function NewSalePage() {
   }
 
   function handleVariantChange(productId: number, variantIndex: number) {
-    setSelectedVariants(prev => ({
-      ...prev,
-      [productId]: variantIndex
-    }));
+    setSelectedVariants(prev => ({ ...prev, [productId]: variantIndex }));
   }
 
   function addToCart(product: Product) {
     if (!product.prices || product.prices.length === 0) {
-      alert('Este producto no tiene precios configurados');
+      toast.error('Este producto no tiene precios configurados');
       return;
     }
-
     const selectedVariantIndex = selectedVariants[product.id] || 0;
     const variant = product.prices[selectedVariantIndex];
-
     const existingItemIndex = cart.findIndex(
       item => item.productId === product.id && item.variant.quantity === variant.quantity
     );
-
     if (existingItemIndex >= 0) {
-      // Update existing item
       const newCart = [...cart];
       newCart[existingItemIndex].quantity += 1;
       setCart(newCart);
     } else {
-      // Add new item
-      const newItem: CartItem = {
+      setCart([...cart, {
         productId: product.id,
         name: product.name,
         quantity: 1,
         price: variant.price,
         variant,
-      };
-      setCart([...cart, newItem]);
+      }]);
     }
-
-    // Reset custom total when cart changes
     setCustomTotal(null);
     setIsEditingTotal(false);
   }
 
   function removeFromCart(index: number) {
-    const newCart = cart.filter((_, i) => i !== index);
-    setCart(newCart);
-    // Reset custom total when cart changes
+    setCart(cart.filter((_, i) => i !== index));
     setCustomTotal(null);
     setIsEditingTotal(false);
   }
 
   function updateCartQuantity(index: number, newQuantity: number) {
-    if (newQuantity <= 0) {
-      removeFromCart(index);
-      return;
-    }
+    if (newQuantity <= 0) { removeFromCart(index); return; }
     const newCart = [...cart];
     newCart[index].quantity = newQuantity;
     setCart(newCart);
-    // Reset custom total when cart changes
     setCustomTotal(null);
     setIsEditingTotal(false);
   }
@@ -115,7 +102,6 @@ export default function NewSalePage() {
     const newCart = [...cart];
     newCart[index].price = newPrice;
     setCart(newCart);
-    // Reset custom total when individual prices change
     setCustomTotal(null);
     setIsEditingTotal(false);
   }
@@ -139,36 +125,27 @@ export default function NewSalePage() {
 
   async function handleCheckout() {
     if (cart.length === 0) {
-      alert('El carrito está vacío');
+      toast.error('El carrito está vacío');
       return;
     }
-
-    const finalTotal = getFinalTotal();
-
     try {
       const res = await fetch('/api/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: cart,
-          paymentMethod,
-          grandTotal: finalTotal,
-        }),
+        body: JSON.stringify({ items: cart, paymentMethod, grandTotal: getFinalTotal() }),
       });
-
       if (res.ok) {
-        alert('Venta realizada con éxito');
+        toast.success('Venta realizada con éxito');
         setCart([]);
         setCustomTotal(null);
         setIsEditingTotal(false);
         router.push('/sales');
       } else {
         const error = await res.json();
-        alert(`Error: ${error.error}`);
+        toast.error(`Error: ${error.error}`);
       }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error al procesar la venta');
+    } catch {
+      toast.error('Error al procesar la venta');
     }
   }
 
@@ -177,178 +154,171 @@ export default function NewSalePage() {
   );
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Nueva Venta</h1>
+    <div>
+      <PageHeader title="Nueva Venta" actions={[{ label: 'Volver', href: '/sales', variant: 'outline' }]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Products Section */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Productos</h2>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Productos</CardTitle>
+              <Input
+                type="text"
+                placeholder="Buscar productos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-1">
+                {filteredProducts.map((product) => (
+                  <div key={product.id} className="border rounded-lg p-3">
+                    <h3 className="font-semibold text-sm">{product.name}</h3>
+                    <p className="text-xs text-muted-foreground mb-1">{product.description}</p>
+                    <p className="text-xs text-muted-foreground mb-2">Stock: {product.stock}</p>
 
-          <input
-            type="text"
-            placeholder="Buscar productos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-300"
-          />
+                    {product.prices && product.prices.length > 0 && (
+                      <div className="mb-2">
+                        <Label className="text-xs">Variación:</Label>
+                        <select
+                          value={selectedVariants[product.id] || 0}
+                          onChange={(e) => handleVariantChange(product.id, parseInt(e.target.value))}
+                          className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mt-1"
+                        >
+                          {product.prices.map((variant, index) => (
+                            <option key={index} value={index}>
+                              {variant.quantity} unidad(es) - ${variant.price}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="border rounded p-4 bg-white shadow-sm">
-                <h3 className="font-semibold">{product.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">{product.description}</p>
-                <p className="text-sm text-gray-500 mb-3">Stock: {product.stock}</p>
-
-                {product.prices && product.prices.length > 0 && (
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Variación:
-                    </label>
-                    <select
-                      value={selectedVariants[product.id] || 0}
-                      onChange={(e) => handleVariantChange(product.id, parseInt(e.target.value))}
-                      className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => addToCart(product)}
+                      disabled={product.stock <= 0}
                     >
-                      {product.prices.map((variant, index) => (
-                        <option key={index} value={index}>
-                          {variant.quantity} unidad(es) - ${variant.price}
-                        </option>
-                      ))}
-                    </select>
+                      {product.stock <= 0 ? 'Sin Stock' : 'Agregar'}
+                    </Button>
                   </div>
-                )}
-
-                <button
-                  onClick={() => addToCart(product)}
-                  className="w-full bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600"
-                  disabled={product.stock <= 0}
-                >
-                  {product.stock <= 0 ? 'Sin Stock' : 'Agregar al Carrito'}
-                </button>
+                ))}
               </div>
-            ))}
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Cart Section */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Carrito</h2>
-
-          {cart.length === 0 ? (
-            <p className="text-gray-500">El carrito está vacío</p>
-          ) : (
-            <>
-              <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                {cart.map((item, index) => (
-                  <div key={index} className="p-3 border rounded bg-gray-50">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{item.name}</h4>
-                        <p className="text-sm text-gray-600">
-                          {item.variant.quantity} unidad(es)
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => removeFromCart(index)}
-                        className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
-                      >
-                        ×
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 items-center">
-                      <div>
-                        <label className="text-xs text-gray-600">Cantidad:</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => updateCartQuantity(index, parseInt(e.target.value) || 0)}
-                          className="w-full border rounded px-2 py-1 text-center text-sm"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-xs text-gray-600">Precio c/u:</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={item.price}
-                          onChange={(e) => updateCartPrice(index, parseFloat(e.target.value) || 0)}
-                          className="w-full border rounded px-2 py-1 text-center text-sm"
-                        />
-                      </div>
-
-                      <div className="text-center">
-                        <label className="text-xs text-gray-600">Subtotal:</label>
-                        <div className="font-medium text-sm">
-                          ${(item.price * item.quantity).toFixed(2)}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Carrito</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {cart.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-8">El carrito está vacío</p>
+              ) : (
+                <>
+                  <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pr-1">
+                    {cart.map((item, index) => (
+                      <div key={index} className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <h4 className="font-medium text-sm">{item.name}</h4>
+                            <p className="text-xs text-muted-foreground">{item.variant.quantity} unidad(es)</p>
+                          </div>
+                          <Button size="sm" variant="ghost" className="text-destructive h-7 w-7 p-0" onClick={() => removeFromCart(index)}>
+                            ×
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 items-center">
+                          <div>
+                            <Label className="text-xs">Cant:</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateCartQuantity(index, parseInt(e.target.value) || 0)}
+                              className="h-8 text-center text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Precio:</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={item.price}
+                              onChange={(e) => updateCartPrice(index, parseFloat(e.target.value) || 0)}
+                              className="h-8 text-center text-xs"
+                            />
+                          </div>
+                          <div className="text-center">
+                            <Label className="text-xs">Subtotal:</Label>
+                            <div className="font-medium text-sm mt-1">
+                              ${(item.price * item.quantity).toFixed(2)}
+                            </div>
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t pt-4 space-y-3">
+                    {/* Total */}
+                    <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <span className="text-lg font-semibold">Total:</span>
+                      <div className="flex items-center gap-2">
+                        {isEditingTotal ? (
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={customTotal || 0}
+                            onChange={(e) => setCustomTotal(parseFloat(e.target.value) || 0)}
+                            className="h-9 text-center font-bold w-28"
+                          />
+                        ) : (
+                          <span className="text-xl font-bold text-emerald-600">
+                            ${getFinalTotal().toFixed(2)}
+                          </span>
+                        )}
+                        <Button size="sm" variant="outline" onClick={handleTotalEdit}>
+                          {isEditingTotal ? '✓' : 'Editar'}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center mb-4 p-3 bg-yellow-50 rounded">
-                  <span className="text-xl font-semibold">Total:</span>
-                  <div className="flex items-center gap-2">
-                    {isEditingTotal ? (
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={customTotal || 0}
-                        onChange={(e) => setCustomTotal(parseFloat(e.target.value) || 0)}
-                        className="border rounded px-2 py-1 text-center font-bold text-xl w-32"
-                      />
-                    ) : (
-                      <span className="text-xl font-bold text-green-600">
-                        ${getFinalTotal().toFixed(2)}
-                      </span>
+                    {customTotal !== null && customTotal !== getCalculatedTotal() && (
+                      <div className="p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+                        💡 Precio especial aplicado
+                      </div>
                     )}
-                    <button
-                      onClick={handleTotalEdit}
-                      className="bg-orange-500 text-white px-2 py-1 rounded text-sm hover:bg-orange-600"
-                    >
-                      {isEditingTotal ? '✓' : 'Editar'}
-                    </button>
+
+                    {/* Payment method */}
+                    <div>
+                      <Label className="text-sm">Método de Pago:</Label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mt-1"
+                      >
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                        <option value="transferencia">Transferencia</option>
+                      </select>
+                    </div>
+
+                    <Button className="w-full" size="lg" onClick={handleCheckout}>
+                      Finalizar Venta — ${getFinalTotal().toFixed(2)}
+                    </Button>
                   </div>
-                </div>
-
-                {customTotal !== null && customTotal !== getCalculatedTotal() && (
-                  <div className="mb-4 p-2 bg-orange-100 rounded text-sm">
-                    <span className="font-medium text-orange-800">
-                      💡 Precio especial aplicado
-                    </span>
-                  </div>
-                )}
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Método de Pago:</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  >
-                    <option value="efectivo">Efectivo</option>
-                    <option value="tarjeta">Tarjeta</option>
-                    <option value="transferencia">Transferencia</option>
-                  </select>
-                </div>
-
-                <button
-                  onClick={handleCheckout}
-                  className="w-full bg-green-500 text-white py-3 rounded font-semibold hover:bg-green-600"
-                >
-                  Finalizar Venta - ${getFinalTotal().toFixed(2)}
-                </button>
-              </div>
-            </>
-          )}
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
