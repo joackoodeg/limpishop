@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -40,8 +41,15 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/" className="text-xl font-bold tracking-tight">
-          Limpi
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/images/logo.png"
+            alt="Limpi"
+            width={220}
+            height={64}
+            className="h-14 w-auto"
+            priority
+          />
         </Link>
 
         {/* Desktop nav */}

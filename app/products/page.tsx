@@ -7,7 +7,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Folder, Package, Search, Star, StarOff } from 'lucide-react';
+import { Eye, Folder, Package, Pencil, Power, PowerOff, Search, Star, StarOff } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import PageHeader from '../components/PageHeader';
 import StatusBadge, { stockStatus, stockLabel } from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -196,10 +204,10 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
 
-      {/* Loading skeletons */}
+      {/* Loading skeletons – Mobile */}
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="md:hidden grid grid-cols-1 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="pt-4 space-y-3">
                 <Skeleton className="h-5 w-3/4" />
@@ -212,9 +220,22 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Products grid */}
-      {!loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Loading skeletons – Desktop */}
+      {loading && (
+        <div className="hidden md:block">
+          <Card>
+            <CardContent className="pt-4 space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ───── Mobile: Card list (scroll) ───── */}
+      {!loading && filteredProducts.length > 0 && (
+        <div className="md:hidden space-y-4">
           {filteredProducts.map((product) => (
             <Card key={product.id} className={`relative ${!product.active ? 'opacity-60' : ''}`}>
               <CardContent className="pt-4">
@@ -249,18 +270,36 @@ export default function ProductsPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 flex-wrap mt-4">
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href={`/products/${product.id}`}>Ver</Link>
+                  <Button size="sm" variant="info" asChild>
+                    <Link href={`/products/${product.id}`}>
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                      Ver
+                    </Link>
                   </Button>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href={`/products/${product.id}/edit`}>Editar</Link>
+                  <Button size="sm" variant="warning" asChild>
+                    <Link href={`/products/${product.id}/edit`}>
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
+                      Editar
+                    </Link>
                   </Button>
                   <Button
                     size="sm"
-                    variant={product.active ? 'secondary' : 'default'}
+                    variant={product.active ? 'secondary' : 'success'}
                     onClick={() => handleToggleActive(product.id)}
                   >
-                    {product.active ? 'Desactivar' : 'Activar'}
+                    <span className="inline-flex items-center gap-1">
+                      {product.active ? (
+                        <>
+                          <PowerOff className="h-4 w-4" aria-hidden="true" />
+                          Desactivar
+                        </>
+                      ) : (
+                        <>
+                          <Power className="h-4 w-4" aria-hidden="true" />
+                          Activar
+                        </>
+                      )}
+                    </span>
                   </Button>
                   <Button
                     size="sm"
@@ -285,6 +324,108 @@ export default function ProductsPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* ───── Desktop: Table view ───── */}
+      {!loading && filteredProducts.length > 0 && (
+        <div className="hidden md:block">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Precios</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.map((product) => (
+                    <TableRow key={product.id} className={!product.active ? 'opacity-60' : ''}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{product.name}</p>
+                          {product.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
+                              {product.description}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {product.categoryName ? (
+                          <span className="inline-flex items-center gap-1 text-sm">
+                            <Folder className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                            {product.categoryName}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          <StatusBadge type={product.active ? 'active' : 'inactive'} />
+                          {product.featured && <StatusBadge type="featured" />}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge type={stockStatus(product.stock)} label={stockLabel(product.stock)} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {product.prices?.map((p, i) => (
+                            <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded">
+                              {p.quantity} → ${p.price}
+                            </span>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-1 justify-end">
+                          <Button size="sm" variant="info" asChild>
+                            <Link href={`/products/${product.id}`}>
+                              <Eye className="h-4 w-4" aria-hidden="true" />
+                            </Link>
+                          </Button>
+                          <Button size="sm" variant="warning" asChild>
+                            <Link href={`/products/${product.id}/edit`}>
+                              <Pencil className="h-4 w-4" aria-hidden="true" />
+                            </Link>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={product.active ? 'secondary' : 'success'}
+                            onClick={() => handleToggleActive(product.id)}
+                          >
+                            {product.active ? (
+                              <PowerOff className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <Power className="h-4 w-4" aria-hidden="true" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={product.featured ? 'secondary' : 'outline'}
+                            onClick={() => handleToggleFeatured(product.id)}
+                          >
+                            {product.featured ? (
+                              <StarOff className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <Star className="h-4 w-4" aria-hidden="true" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       )}
 

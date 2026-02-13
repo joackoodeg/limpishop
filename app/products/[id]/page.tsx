@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Folder } from 'lucide-react';
+import { Folder, Pencil, Trash2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -83,15 +83,21 @@ export default function ProductDetailsPage() {
     <div>
       <PageHeader title={product.name}>
         <Button variant="outline" onClick={() => router.back()}>Volver</Button>
-        <Button variant="secondary" asChild>
-          <Link href={`/products/${product.id}/edit`}>Editar</Link>
+        <Button variant="warning" asChild>
+          <Link href={`/products/${product.id}/edit`}>
+            <Pencil className="h-4 w-4" aria-hidden="true" />
+            Editar
+          </Link>
         </Button>
         <ConfirmDialog
           description="¿Seguro que deseas eliminar este producto? Esta acción no se puede deshacer."
           onConfirm={handleDelete}
           confirmLabel="Eliminar"
         >
-          <Button variant="destructive">Eliminar</Button>
+          <Button variant="destructive">
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            Eliminar
+          </Button>
         </ConfirmDialog>
       </PageHeader>
 

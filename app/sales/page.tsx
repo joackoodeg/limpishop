@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Receipt } from 'lucide-react';
+import { Receipt, Trash2 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
@@ -116,7 +116,10 @@ export default function SalesPage() {
                       onConfirm={() => handleDelete(sale.id)}
                       confirmLabel="Eliminar"
                     >
-                      <Button size="sm" variant="destructive">Eliminar</Button>
+                      <Button size="sm" variant="destructive">
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        Eliminar
+                      </Button>
                     </ConfirmDialog>
                   </div>
                 </div>

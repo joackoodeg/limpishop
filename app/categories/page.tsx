@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { ImagePlus, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -232,15 +233,22 @@ export default function CategoriesPage() {
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => toggleImageUpload(category.id)}>
+                        <ImagePlus className="h-4 w-4" aria-hidden="true" />
                         {category.imageUrl ? 'Cambiar img' : 'Agregar img'}
                       </Button>
-                      <Button size="sm" variant="secondary" onClick={() => setEditingCategory(category)}>Editar</Button>
+                      <Button size="sm" variant="warning" onClick={() => setEditingCategory(category)}>
+                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                        Editar
+                      </Button>
                       <ConfirmDialog
                         description="¿Estás seguro de que quieres eliminar esta categoría?"
                         onConfirm={() => handleDeleteCategory(category.id)}
                         confirmLabel="Eliminar"
                       >
-                        <Button size="sm" variant="destructive">Eliminar</Button>
+                        <Button size="sm" variant="destructive">
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          Eliminar
+                        </Button>
                       </ConfirmDialog>
                     </div>
                   </div>

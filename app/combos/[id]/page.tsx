@@ -89,7 +89,7 @@ export default function ComboDetailPage() {
                 <StatusBadge type={combo.active ? 'active' : 'inactive'} />
                 <Button
                   size="sm"
-                  variant={combo.active ? 'secondary' : 'default'}
+                  variant={combo.active ? 'warning' : 'success'}
                   onClick={toggleComboStatus}
                 >
                   {combo.active ? 'Desactivar' : 'Activar'}

@@ -8,7 +8,7 @@ import autoTable from 'jspdf-autotable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Gift } from 'lucide-react';
+import { Eye, Gift, Pencil, Power, PowerOff, Trash2 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -199,17 +199,42 @@ export default function CombosPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2 items-start">
-                    <Button size="sm" variant="outline" asChild><Link href={`/combos/${combo.id}`}>Ver</Link></Button>
-                    <Button size="sm" variant="outline" asChild><Link href={`/combos/${combo.id}/edit`}>Editar</Link></Button>
+                    <Button size="sm" variant="info" asChild>
+                      <Link href={`/combos/${combo.id}`}>
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                        Ver
+                      </Link>
+                    </Button>
+                    <Button size="sm" variant="warning" asChild>
+                      <Link href={`/combos/${combo.id}/edit`}>
+                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                        Editar
+                      </Link>
+                    </Button>
                     <Button
                       size="sm"
-                      variant={combo.active ? 'secondary' : 'default'}
+                      variant={combo.active ? 'secondary' : 'success'}
                       onClick={() => toggleComboStatus(combo.id, combo.active)}
                     >
-                      {combo.active ? 'Desactivar' : 'Activar'}
+                      <span className="inline-flex items-center gap-1">
+                        {combo.active ? (
+                          <>
+                            <PowerOff className="h-4 w-4" aria-hidden="true" />
+                            Desactivar
+                          </>
+                        ) : (
+                          <>
+                            <Power className="h-4 w-4" aria-hidden="true" />
+                            Activar
+                          </>
+                        )}
+                      </span>
                     </Button>
                     <ConfirmDialog description="¿Eliminar este combo?" onConfirm={() => deleteCombo(combo.id)} confirmLabel="Eliminar">
-                      <Button size="sm" variant="destructive">Eliminar</Button>
+                      <Button size="sm" variant="destructive">
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        Eliminar
+                      </Button>
                     </ConfirmDialog>
                   </div>
                 </div>

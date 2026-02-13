@@ -6,7 +6,7 @@ interface Action {
   label: string;
   href?: string;
   onClick?: () => void;
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost';
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'success' | 'warning';
   disabled?: boolean;
 }
 

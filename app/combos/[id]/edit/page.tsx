@@ -182,7 +182,7 @@ export default function EditComboPage({ params }: { params: Promise<{ id: string
               <Button
                 type="button"
                 size="sm"
-                variant={formData.active ? 'default' : 'outline'}
+                variant={formData.active ? 'success' : 'warning'}
                 onClick={() => setFormData({ ...formData, active: !formData.active })}
               >
                 <span className="inline-flex items-center gap-1">
