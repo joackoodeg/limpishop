@@ -17,7 +17,7 @@ const navLinks = [
   { href: '/products', label: 'Productos' },
   { href: '/categories', label: 'Categorías' },
   { href: '/sales', label: 'Ventas' },
-  { href: '/sales/summary', label: 'Resumen' },
+  { href: '/resumen', label: 'Resumen' },
   { href: '/reports', label: 'Reportes' },
   { href: '/combos', label: 'Combos' },
   { href: '/config', label: 'Configuración' },
