@@ -83,9 +83,20 @@ export default function CombosPage() {
     const pageHeight = doc.internal.pageSize.height;
     const margin = 20;
 
+    // Obtener configuración del local
+    let storeConfig = { storeName: 'El Limpito', phone: '342-486-9674', address: '', logoUrl: '' };
+    try {
+      const configResponse = await fetch('/api/config');
+      if (configResponse.ok) {
+        storeConfig = await configResponse.json();
+      }
+    } catch (error) {
+      console.error('Error al cargar configuración:', error);
+    }
+
     try {
       const img = new Image();
-      img.src = '/logo.jpg';
+      img.src = storeConfig.logoUrl || '/logo.jpg';
       await new Promise((resolve) => {
         img.onload = () => { doc.addImage(img, 'JPEG', 20, 10, 30, 30); resolve(true); };
         img.onerror = () => resolve(true);
@@ -93,11 +104,15 @@ export default function CombosPage() {
     } catch { /* ignore */ }
 
     doc.setFontSize(20); doc.setTextColor(40);
-    doc.text('Lista de Combos - El Limipito', 60, 25);
+    doc.text(`Lista de Combos - ${storeConfig.storeName}`, 60, 25);
     doc.setFontSize(12); doc.setTextColor(100);
-    doc.text('WhatsApp: 342-486-9674', 60, 35);
+    doc.text(`WhatsApp: ${storeConfig.phone}`, 60, 35);
     doc.setFontSize(10); doc.setTextColor(120);
     doc.text('Combos disponibles con ofertas especiales', 60, 42);
+    if (storeConfig.address) {
+      doc.setFontSize(9);
+      doc.text(storeConfig.address, 60, 47);
+    }
 
     const activeCombos = combos.filter((combo: any) => combo.active);
 
@@ -158,10 +173,10 @@ export default function CombosPage() {
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i); doc.setFontSize(8); doc.setTextColor(150);
-      doc.text(`Página ${i} de ${pageCount} | WhatsApp: 342-486-9674`, margin, pageHeight - 10);
+      doc.text(`Página ${i} de ${pageCount} | ${storeConfig.phone ? 'WhatsApp: ' + storeConfig.phone : storeConfig.storeName}`, margin, pageHeight - 10);
     }
 
-    doc.save(`ElLimpito-Combos-${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`${storeConfig.storeName}-Combos-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   return (
