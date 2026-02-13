@@ -20,6 +20,8 @@ import PageHeader from '../components/PageHeader';
 import StatusBadge, { stockStatus, stockLabel } from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
+import Pagination from '../components/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 interface Price {
   quantity: number;
@@ -122,6 +124,20 @@ export default function ProductsPage() {
       (filters.featured === 'notFeatured' && !product.featured);
     return matchesQuery && matchesActive && matchesStock && matchesCategory && matchesFeatured;
   });
+
+  const {
+    paginatedItems: paginatedProducts,
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    pageSizeOptions,
+    itemRange,
+    hasNextPage,
+    hasPrevPage,
+    goToPage,
+    setPageSize,
+  } = usePagination(filteredProducts, { defaultPageSize: 10 });
 
   const handleFilterChange = (filterType: string, value: string) => {
     setFilters(prev => ({ ...prev, [filterType]: value }));
@@ -236,7 +252,7 @@ export default function ProductsPage() {
       {/* ───── Mobile: Card list (scroll) ───── */}
       {!loading && filteredProducts.length > 0 && (
         <div className="md:hidden space-y-4">
-          {filteredProducts.map((product) => (
+          {paginatedProducts.map((product) => (
             <Card key={product.id} className={`relative ${!product.active ? 'opacity-60' : ''}`}>
               <CardContent className="pt-4">
                 {/* Badges */}
@@ -344,7 +360,7 @@ export default function ProductsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.map((product) => (
+                  {paginatedProducts.map((product) => (
                     <TableRow key={product.id} className={!product.active ? 'opacity-60' : ''}>
                       <TableCell>
                         <div>
@@ -427,6 +443,23 @@ export default function ProductsPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && filteredProducts.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={pageSizeOptions}
+          itemRange={itemRange}
+          hasNextPage={hasNextPage}
+          hasPrevPage={hasPrevPage}
+          onPageChange={goToPage}
+          onPageSizeChange={setPageSize}
+          itemLabel="productos"
+        />
       )}
 
       {!loading && filteredProducts.length === 0 && products.length > 0 && (

@@ -11,6 +11,8 @@ import { Receipt, Trash2 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
+import Pagination from '../components/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 interface SaleItem {
   productId: number;
@@ -67,6 +69,20 @@ export default function SalesPage() {
 
   const filtered = sales.filter(matchesFilter);
 
+  const {
+    paginatedItems: paginatedSales,
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    pageSizeOptions,
+    itemRange,
+    hasNextPage,
+    hasPrevPage,
+    goToPage,
+    setPageSize,
+  } = usePagination(filtered, { defaultPageSize: 10 });
+
   return (
     <div>
       <PageHeader title="Historial de Ventas">
@@ -98,9 +114,9 @@ export default function SalesPage() {
       )}
 
       {/* Sales list */}
-      {!loading && (
+      {!loading && filtered.length > 0 && (
         <div className="space-y-3">
-          {filtered.map((sale) => (
+          {paginatedSales.map((sale) => (
             <Card key={sale.id}>
               <CardContent className="pt-4">
                 <div className="flex justify-between items-start mb-3">
@@ -141,6 +157,23 @@ export default function SalesPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && filtered.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={pageSizeOptions}
+          itemRange={itemRange}
+          hasNextPage={hasNextPage}
+          hasPrevPage={hasPrevPage}
+          onPageChange={goToPage}
+          onPageSizeChange={setPageSize}
+          itemLabel="ventas"
+        />
       )}
 
       {!loading && filtered.length === 0 && (

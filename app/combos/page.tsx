@@ -13,6 +13,8 @@ import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
+import Pagination from '../components/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 export default function CombosPage() {
   const [combos, setCombos] = useState<any[]>([]);
@@ -31,6 +33,20 @@ export default function CombosPage() {
       setLoading(false);
     }
   };
+
+  const {
+    paginatedItems: paginatedCombos,
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems,
+    pageSizeOptions,
+    itemRange,
+    hasNextPage,
+    hasPrevPage,
+    goToPage,
+    setPageSize,
+  } = usePagination(combos, { defaultPageSize: 10 });
 
   const toggleComboStatus = async (id: number, currentStatus: boolean) => {
     try {
@@ -179,7 +195,7 @@ export default function CombosPage() {
 
       {!loading && combos.length > 0 && (
         <div className="space-y-3">
-          {combos.map((combo: any) => (
+          {paginatedCombos.map((combo: any) => (
             <Card key={combo.id}>
               <CardContent className="pt-4">
                 <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -242,6 +258,23 @@ export default function CombosPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && combos.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={pageSizeOptions}
+          itemRange={itemRange}
+          hasNextPage={hasNextPage}
+          hasPrevPage={hasPrevPage}
+          onPageChange={goToPage}
+          onPageSizeChange={setPageSize}
+          itemLabel="combos"
+        />
       )}
     </div>
   );
