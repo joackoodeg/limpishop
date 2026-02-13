@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import {
   Package,
   TrendingUp,
   BarChart3,
+  Receipt,
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
@@ -30,6 +32,22 @@ interface ProductStat {
 interface SummaryData {
   overall: { units: number; revenue: number; cost: number; net: number };
   products: ProductStat[];
+}
+
+interface SaleItem {
+  productId: number;
+  productName: string;
+  quantity: number;
+  price: number;
+  size: number;
+}
+
+interface Sale {
+  id: number;
+  items: SaleItem[];
+  grandTotal: number;
+  paymentMethod: string;
+  date: string;
 }
 
 type DatePreset = 'today' | 'week' | 'month' | 'year' | 'custom';
@@ -61,11 +79,14 @@ function getPresetDates(preset: DatePreset): { from: string; to: string } {
 }
 
 export default function ResumenPage() {
+  const router = useRouter();
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [activePreset, setActivePreset] = useState<DatePreset | null>(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<SummaryData | null>(null);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [salesLoading, setSalesLoading] = useState(false);
   const [sortBy, setSortBy] = useState<'quantity' | 'revenue' | 'netRevenue'>('quantity');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -85,6 +106,22 @@ export default function ResumenPage() {
     }
   }
 
+  async function fetchSales(fromDate?: string, toDate?: string) {
+    setSalesLoading(true);
+    try {
+      const params = new URLSearchParams();
+      const f = fromDate ?? from;
+      const t = toDate ?? to;
+      if (f) params.set('from', f);
+      if (t) params.set('to', t);
+      const res = await fetch(`/api/sales?${params.toString()}`);
+      const data = await res.json();
+      setSales(data);
+    } finally {
+      setSalesLoading(false);
+    }
+  }
+
   function applyPreset(preset: DatePreset) {
     setActivePreset(preset);
     if (preset === 'custom') return;
@@ -92,10 +129,17 @@ export default function ResumenPage() {
     setFrom(f);
     setTo(t);
     fetchSummary(f, t);
+    fetchSales(f, t);
+  }
+
+  function applyFilters() {
+    fetchSummary();
+    fetchSales();
   }
 
   useEffect(() => {
     fetchSummary();
+    fetchSales();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -181,7 +225,7 @@ export default function ResumenPage() {
             />
           </div>
           <div className="flex items-end">
-            <Button onClick={() => fetchSummary()} disabled={loading}>
+            <Button onClick={applyFilters} disabled={loading || salesLoading}>
               {loading ? 'Cargando…' : 'Aplicar filtro'}
             </Button>
           </div>
@@ -405,6 +449,79 @@ export default function ResumenPage() {
                           <td className="hidden md:table-cell" />
                         </tr>
                       </tfoot>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Sales list */}
+            <Card className="mt-6">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-muted-foreground" />
+                  <CardTitle className="text-lg">Ventas del período</CardTitle>
+                </div>
+                <Badge variant="outline">{sales.length} ventas</Badge>
+              </CardHeader>
+              <CardContent>
+                {salesLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full" />
+                    ))}
+                  </div>
+                ) : sales.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No hay ventas en el período seleccionado
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto -mx-6 px-6">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Venta
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Fecha
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Pago
+                          </th>
+                          <th className="px-3 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Total
+                          </th>
+                          <th className="px-3 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Ítems
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {sales.map((sale) => (
+                          <tr
+                            key={sale.id}
+                            className="hover:bg-muted/50 transition-colors cursor-pointer"
+                            onClick={() => router.push(`/sales/${sale.id}`)}
+                          >
+                            <td className="px-3 py-3 whitespace-nowrap text-sm font-medium">
+                              Venta #{sale.id}
+                            </td>
+                            <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                              {new Date(sale.date).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-3 whitespace-nowrap text-sm capitalize">
+                              {sale.paymentMethod}
+                            </td>
+                            <td className="px-3 py-3 whitespace-nowrap text-right text-sm font-medium text-emerald-600">
+                              ${sale.grandTotal.toFixed(2)}
+                            </td>
+                            <td className="px-3 py-3 whitespace-nowrap text-right text-sm text-muted-foreground">
+                              {sale.items.length}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
                     </table>
                   </div>
                 )}

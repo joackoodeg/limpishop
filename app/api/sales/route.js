@@ -1,11 +1,29 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sales, saleItems, products } from '@/lib/db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const allSales = await db.select().from(sales).orderBy(desc(sales.date));
+    const { searchParams } = new URL(request.url);
+    const fromStr = searchParams.get('from');
+    const toStr = searchParams.get('to');
+
+    const from = fromStr
+      ? (fromStr.includes('T') ? fromStr : `${fromStr}T00:00:00`)
+      : null;
+    const to = toStr
+      ? (toStr.includes('T') ? toStr : `${toStr}T23:59:59`)
+      : null;
+
+    const filters = [];
+    if (from) filters.push(gte(sales.date, from));
+    if (to) filters.push(lte(sales.date, to));
+
+    const salesQuery = db.select().from(sales).orderBy(desc(sales.date));
+    const allSales = filters.length > 0
+      ? await salesQuery.where(and(...filters))
+      : await salesQuery;
 
     // Fetch all sale items
     const allItems = allSales.length > 0

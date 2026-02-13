@@ -3,6 +3,40 @@ import { db } from '@/lib/db';
 import { sales, saleItems, products } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 
+export async function GET(request, { params }) {
+  try {
+    const { id } = await params;
+    const numId = Number(id);
+
+    if (isNaN(numId)) {
+      return NextResponse.json({ error: 'Invalid sale ID' }, { status: 400 });
+    }
+
+    const [sale] = await db.select().from(sales).where(eq(sales.id, numId));
+    if (!sale) {
+      return NextResponse.json({ error: 'Sale not found' }, { status: 404 });
+    }
+
+    const items = await db.select().from(saleItems).where(eq(saleItems.saleId, numId));
+
+    const result = {
+      ...sale,
+      items: items.map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        size: item.size,
+      })),
+    };
+
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: 'Error fetching sale' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
