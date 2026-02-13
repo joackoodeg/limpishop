@@ -80,3 +80,18 @@ export const comboProducts = sqliteTable('combo_products', {
   quantity: integer('quantity').notNull(),
   price: real('price').notNull(),
 });
+
+// ── Store Configuration ─────────────────────────────────────────────────────
+export const storeConfig = sqliteTable('store_config', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  storeName: text('store_name').notNull().default('Mi Negocio'),
+  phone: text('phone').default(''),
+  email: text('email').default(''),
+  address: text('address').default(''),
+  city: text('city').default(''),
+  logoUrl: text('logo_url'),
+  logoPublicId: text('logo_public_id'),
+  taxId: text('tax_id').default(''), // RUC, CUIT, etc.
+  createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`).notNull(),
+});

@@ -20,6 +20,7 @@ const navLinks = [
   { href: '/sales/summary', label: 'Resumen' },
   { href: '/reports', label: 'Reportes' },
   { href: '/combos', label: 'Combos' },
+  { href: '/config', label: 'Configuración' },
 ];
 
 const Navbar = () => {

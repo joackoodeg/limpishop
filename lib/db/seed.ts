@@ -11,6 +11,7 @@ import {
   saleItems,
   combos,
   comboProducts,
+  storeConfig,
 } from './schema';
 
 const client = createClient({
@@ -32,6 +33,20 @@ const now = daysAgo(0);
 // ── Seed ────────────────────────────────────────────────────────────────────
 async function seed() {
   console.log('🌱 Iniciando seed de datos de demostración...\n');
+
+  // ── 0. Configuración del Local ─────────────────────────────────────────
+  console.log('⚙️  Creando configuración del local...');
+  await db.insert(storeConfig).values({
+    storeName: 'LimpiShop',
+    phone: '+595 21 123456',
+    email: 'contacto@limpishop.com',
+    address: 'Av. Principal 1234',
+    city: 'Asunción',
+    taxId: '80012345-6',
+    createdAt: daysAgo(30),
+    updatedAt: daysAgo(30),
+  });
+  console.log('   ✅ Configuración del local creada\n');
 
   // ── 1. Categorías ──────────────────────────────────────────────────────
   console.log('📁 Creando categorías...');
