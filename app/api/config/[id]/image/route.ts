@@ -6,10 +6,11 @@ import { uploadToCloudinary, deleteFromCloudinary } from '@/lib/cloudinary';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const configId = parseInt(params.id);
+    const { id } = await params;
+    const configId = parseInt(id);
     
     // Verificar que existe la configuración
     const existingConfig = await db
@@ -76,10 +77,11 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const configId = parseInt(params.id);
+    const { id } = await params;
+    const configId = parseInt(id);
 
     // Obtener configuración actual
     const existingConfig = await db

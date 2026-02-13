@@ -104,7 +104,6 @@ export default function ConfigPage() {
       <PageHeader
         title="Configuración del Local"
         description="Gestiona la información de tu negocio"
-        icon={Building2}
       />
 
       <Card className="max-w-3xl">
