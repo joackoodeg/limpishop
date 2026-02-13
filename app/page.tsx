@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { BarChart3, FileText, Folder, Gift, Package, ShoppingCart } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface DashboardStats {
   totalProducts: number;
@@ -13,13 +15,13 @@ interface DashboardStats {
   todayRevenue: number;
 }
 
-const quickLinks = [
-  { href: '/products', label: 'Productos', icon: '📦', description: 'Gestionar catálogo' },
-  { href: '/sales/new', label: 'Nueva Venta', icon: '🛒', description: 'Registrar venta' },
-  { href: '/categories', label: 'Categorías', icon: '📁', description: 'Organizar productos' },
-  { href: '/combos', label: 'Combos', icon: '🎁', description: 'Ofertas especiales' },
-  { href: '/sales', label: 'Ventas', icon: '📊', description: 'Historial de ventas' },
-  { href: '/reports', label: 'Reportes', icon: '📄', description: 'Generar PDF' },
+const quickLinks: Array<{ href: string; label: string; icon: LucideIcon; description: string }> = [
+  { href: '/products', label: 'Productos', icon: Package, description: 'Gestionar catálogo' },
+  { href: '/sales/new', label: 'Nueva Venta', icon: ShoppingCart, description: 'Registrar venta' },
+  { href: '/categories', label: 'Categorías', icon: Folder, description: 'Organizar productos' },
+  { href: '/combos', label: 'Combos', icon: Gift, description: 'Ofertas especiales' },
+  { href: '/sales', label: 'Ventas', icon: BarChart3, description: 'Historial de ventas' },
+  { href: '/reports', label: 'Reportes', icon: FileText, description: 'Generar PDF' },
 ];
 
 export default function HomePage() {
@@ -127,7 +129,7 @@ export default function HomePage() {
             <Link key={link.href} href={link.href}>
               <Card className="h-full hover:bg-accent/50 transition-colors cursor-pointer">
                 <CardContent className="flex flex-col items-center justify-center text-center pt-6 pb-4">
-                  <span className="text-3xl mb-2">{link.icon}</span>
+                  <link.icon className="h-8 w-8 mb-2 text-muted-foreground" aria-hidden="true" />
                   <span className="font-medium text-sm">{link.label}</span>
                   <span className="text-xs text-muted-foreground mt-1">{link.description}</span>
                 </CardContent>

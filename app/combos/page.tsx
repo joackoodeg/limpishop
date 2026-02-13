@@ -8,6 +8,7 @@ import autoTable from 'jspdf-autotable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Gift } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -167,7 +168,13 @@ export default function CombosPage() {
       )}
 
       {!loading && combos.length === 0 && (
-        <EmptyState icon="🎁" title="No hay combos creados" description="Crea tu primer combo con descuento" actionLabel="Crear Combo" actionHref="/combos/new" />
+        <EmptyState
+          icon={<Gift className="h-10 w-10 text-muted-foreground" aria-hidden="true" />}
+          title="No hay combos creados"
+          description="Crea tu primer combo con descuento"
+          actionLabel="Crear Combo"
+          actionHref="/combos/new"
+        />
       )}
 
       {!loading && combos.length > 0 && (

@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui/button';
+import { Package } from 'lucide-react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 interface EmptyStateProps {
-  icon?: string;
+  icon?: ReactNode;
   title: string;
   description?: string;
   actionLabel?: string;
@@ -11,7 +13,7 @@ interface EmptyStateProps {
 }
 
 export default function EmptyState({
-  icon = '📦',
+  icon = <Package className="h-10 w-10 text-muted-foreground" aria-hidden="true" />,
   title,
   description,
   actionLabel,
@@ -20,7 +22,7 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <span className="text-4xl mb-4">{icon}</span>
+      <span className="mb-4">{icon}</span>
       <h3 className="text-lg font-semibold text-foreground">{title}</h3>
       {description && (
         <p className="text-sm text-muted-foreground mt-1 max-w-sm">{description}</p>

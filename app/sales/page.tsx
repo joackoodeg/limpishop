@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Receipt } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
@@ -140,7 +141,11 @@ export default function SalesPage() {
       )}
 
       {!loading && filtered.length === 0 && (
-        <EmptyState icon="🧾" title="No se encontraron ventas" description="Ajusta los filtros o realiza una nueva venta" />
+        <EmptyState
+          icon={<Receipt className="h-10 w-10 text-muted-foreground" aria-hidden="true" />}
+          title="No se encontraron ventas"
+          description="Ajusta los filtros o realiza una nueva venta"
+        />
       )}
     </div>
   );

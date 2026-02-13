@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '../../../components/PageHeader';
+import { CheckCircle2, XCircle } from 'lucide-react';
 
 export default function EditComboPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -184,7 +185,19 @@ export default function EditComboPage({ params }: { params: Promise<{ id: string
                 variant={formData.active ? 'default' : 'outline'}
                 onClick={() => setFormData({ ...formData, active: !formData.active })}
               >
-                {formData.active ? '✅ Activo' : '❌ Inactivo'}
+                <span className="inline-flex items-center gap-1">
+                  {formData.active ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                      Activo
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="h-4 w-4" aria-hidden="true" />
+                      Inactivo
+                    </>
+                  )}
+                </span>
               </Button>
             </div>
           </CardContent>

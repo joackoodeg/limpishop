@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Folder } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -102,7 +103,10 @@ export default function ProductDetailsPage() {
           </div>
 
           {product.categoryName && (
-            <p className="text-sm text-primary mb-3">📁 {product.categoryName}</p>
+            <p className="text-sm text-primary mb-3 flex items-center gap-1">
+              <Folder className="h-4 w-4" aria-hidden="true" />
+              {product.categoryName}
+            </p>
           )}
 
           <div className="mb-4">

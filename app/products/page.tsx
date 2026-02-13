@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Folder, Package, Search, Star, StarOff } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import StatusBadge, { stockStatus, stockLabel } from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -227,7 +228,10 @@ export default function ProductsPage() {
                 {/* Name & category */}
                 <h2 className="text-lg font-semibold mt-2">{product.name}</h2>
                 {product.categoryName && (
-                  <p className="text-sm text-primary">📁 {product.categoryName}</p>
+                  <p className="text-sm text-primary flex items-center gap-1">
+                    <Folder className="h-4 w-4" aria-hidden="true" />
+                    {product.categoryName}
+                  </p>
                 )}
                 <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
 
@@ -263,7 +267,19 @@ export default function ProductsPage() {
                     variant={product.featured ? 'secondary' : 'outline'}
                     onClick={() => handleToggleFeatured(product.id)}
                   >
-                    {product.featured ? 'Quitar ⭐' : '⭐'}
+                    <span className="inline-flex items-center gap-1">
+                      {product.featured ? (
+                        <>
+                          <StarOff className="h-4 w-4" aria-hidden="true" />
+                          Quitar destacado
+                        </>
+                      ) : (
+                        <>
+                          <Star className="h-4 w-4" aria-hidden="true" />
+                          Destacar
+                        </>
+                      )}
+                    </span>
                   </Button>
                 </div>
               </CardContent>
@@ -274,7 +290,7 @@ export default function ProductsPage() {
 
       {!loading && filteredProducts.length === 0 && products.length > 0 && (
         <EmptyState
-          icon="🔍"
+          icon={<Search className="h-10 w-10 text-muted-foreground" aria-hidden="true" />}
           title="No se encontraron productos"
           description="Prueba ajustando los filtros"
           actionLabel="Limpiar filtros"
@@ -284,7 +300,7 @@ export default function ProductsPage() {
 
       {!loading && products.length === 0 && (
         <EmptyState
-          icon="📦"
+          icon={<Package className="h-10 w-10 text-muted-foreground" aria-hidden="true" />}
           title="No hay productos registrados"
           description="Comienza agregando tu primer producto"
           actionLabel="Agregar Producto"
