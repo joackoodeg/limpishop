@@ -26,7 +26,6 @@ export async function GET() {
 
     const result = allSales.map(s => ({
       ...s,
-      _id: s.id,
       items: itemsBySale[s.id] || [],
     }));
 
@@ -86,7 +85,6 @@ export async function POST(request) {
 
     const result = {
       ...newSale,
-      _id: newSale.id,
       items: insertedItems.map(si => ({
         productId: si.productId,
         productName: si.productName,

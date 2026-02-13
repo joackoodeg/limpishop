@@ -3,34 +3,21 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-interface LegacySale {
-  _id: string;
-  productId: string;
-  productName: string;
-  price: number;
-  quantity: number;
-  size: string;
-  total: number;
-  date: string;
-}
-
 interface SaleItem {
-  productId: string;
+  productId: number;
   productName: string;
   quantity: number;
   price: number;
   size: number;
 }
 
-interface ModernSale {
-  _id: string;
+interface Sale {
+  id: number;
   items: SaleItem[];
   grandTotal: number;
   paymentMethod: string;
   date: string;
 }
-
-type Sale = LegacySale | ModernSale;
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -48,7 +35,7 @@ export default function SalesPage() {
     setSales(data);
   }
 
-  async function handleDelete(saleId: string) {
+  async function handleDelete(saleId: number) {
     const ok = confirm('¿Seguro que deseas eliminar esta venta? Esta acción restaurará el stock del producto.');
     if (ok) {
       await fetch(`/api/sales/${saleId}`, {
@@ -58,12 +45,8 @@ export default function SalesPage() {
     }
   }
 
-  function isModernSale(sale: Sale): sale is ModernSale {
-    return 'items' in sale && 'grandTotal' in sale;
-  }
-
   function getSaleTotal(sale: Sale): number {
-    return isModernSale(sale) ? sale.grandTotal : sale.total;
+    return sale.grandTotal;
   }
 
   function getSaleDate(sale: Sale): string {
@@ -75,14 +58,9 @@ export default function SalesPage() {
     const afterFrom = from ? saleDate >= new Date(from) : true;
     const beforeTo = to ? saleDate <= new Date(to + 'T23:59:59') : true;
 
-    let matchesProduct = false;
-    if (isModernSale(sale)) {
-      matchesProduct = sale.items.some(item =>
-        item.productName.toLowerCase().includes(query.toLowerCase())
-      );
-    } else {
-      matchesProduct = sale.productName.toLowerCase().includes(query.toLowerCase());
-    }
+    const matchesProduct = sale.items.some(item =>
+      item.productName.toLowerCase().includes(query.toLowerCase())
+    );
 
     return matchesProduct && afterFrom && beforeTo;
   }
@@ -124,25 +102,23 @@ export default function SalesPage() {
         {sales
           .filter(matchesFilter)
           .map((sale) => (
-            <div key={sale._id} className="border rounded-lg p-4 bg-white shadow-sm">
+            <div key={sale.id} className="border rounded-lg p-4 bg-white shadow-sm">
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="font-semibold text-lg">
-                    Venta #{sale._id.slice(-6)}
+                    Venta #{sale.id}
                   </h3>
                   <p className="text-sm text-gray-600">{getSaleDate(sale)}</p>
-                  {isModernSale(sale) && (
-                    <p className="text-sm text-gray-600 capitalize">
-                      Pago: {sale.paymentMethod}
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-600 capitalize">
+                    Pago: {sale.paymentMethod}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-bold text-green-600">
                     ${getSaleTotal(sale).toFixed(2)}
                   </p>
                   <button
-                    onClick={() => handleDelete(sale._id)}
+                    onClick={() => handleDelete(sale.id)}
                     className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm mt-2"
                   >
                     Eliminar
@@ -151,47 +127,26 @@ export default function SalesPage() {
               </div>
 
               <div className="border-t pt-3">
-                {isModernSale(sale) ? (
-                  // Modern multi-product sale
-                  <div className="space-y-2">
-                    {sale.items.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center">
-                        <div>
-                          <span className="font-medium">{item.productName}</span>
-                          <span className="text-sm text-gray-600 ml-2">
-                            ({item.size} unidades)
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-sm text-gray-600">
-                            {item.quantity} × ${item.price} =
-                          </span>
-                          <span className="font-medium ml-1">
-                            ${(item.quantity * item.price).toFixed(2)}
-                          </span>
-                        </div>
+                <div className="space-y-2">
+                  {sale.items.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">{item.productName}</span>
+                        <span className="text-sm text-gray-600 ml-2">
+                          ({item.size} unidades)
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  // Legacy single-product sale
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-medium">{sale.productName}</span>
-                      <span className="text-sm text-gray-600 ml-2">
-                        ({sale.size})
-                      </span>
+                      <div className="text-right">
+                        <span className="text-sm text-gray-600">
+                          {item.quantity} × ${item.price} =
+                        </span>
+                        <span className="font-medium ml-1">
+                          ${(item.quantity * item.price).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-sm text-gray-600">
-                        {sale.quantity} × ${sale.price} =
-                      </span>
-                      <span className="font-medium ml-1">
-                        ${sale.total.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             </div>
           ))}

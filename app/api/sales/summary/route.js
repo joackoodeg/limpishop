@@ -31,7 +31,7 @@ export async function GET(request) {
       const key = row.productId || row.productName;
       if (!productMap[key]) {
         productMap[key] = {
-          _id: row.productId,
+          id: row.productId,
           productName: row.productName,
           quantity: 0,
           revenue: 0,
@@ -43,7 +43,7 @@ export async function GET(request) {
 
     // Get cost for each product
     const productIds = Object.values(productMap)
-      .map(p => p._id)
+      .map(p => p.id)
       .filter(Boolean);
 
     const productCosts = {};
@@ -56,7 +56,7 @@ export async function GET(request) {
 
     // Build product stats
     const productStats = Object.values(productMap).map(p => {
-      const costUnit = p._id ? (productCosts[p._id] || 0) : 0;
+      const costUnit = p.id ? (productCosts[p.id] || 0) : 0;
       const costTotal = costUnit * p.quantity;
       const netRevenue = p.revenue - costTotal;
       return {

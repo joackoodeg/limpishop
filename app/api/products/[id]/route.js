@@ -6,8 +6,6 @@ import { eq } from 'drizzle-orm';
 function formatProduct(product, prices) {
   return {
     ...product,
-    _id: product.id,
-    image: { url: product.imageUrl, publicId: product.imagePublicId },
     prices: prices.map(p => ({ quantity: p.quantity, price: p.price })),
   };
 }
@@ -109,8 +107,6 @@ export async function DELETE(request, context) {
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
-
-    // productPrices are cascade-deleted
 
     return NextResponse.json({ message: 'Product deleted' });
   } catch (e) {

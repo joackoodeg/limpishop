@@ -12,8 +12,8 @@ export default function CategoryImage({
   const [imageError, setImageError] = useState(false);
   
   const getImageUrl = () => {
-    if (category?.image?.url && !imageError) {
-      return category.image.url;
+    if (category?.imageUrl && !imageError) {
+      return category.imageUrl;
     }
     return '/images/default-category.svg';
   };

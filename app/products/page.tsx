@@ -10,7 +10,7 @@ interface Price {
 }
 
 interface Product {
-  _id: string;
+  id: number;
   name: string;
   prices: Price[];
   stock: number;
@@ -18,7 +18,7 @@ interface Product {
   active: boolean;
   featured: boolean;
   categoryName?: string;
-  categoryId?: string;
+  categoryId?: number;
 }
 
 export default function ProductsPage() {
@@ -57,7 +57,7 @@ export default function ProductsPage() {
     }
   }
 
-  async function handleDelete(productId: string) {
+  async function handleDelete(productId: number) {
     const ok = confirm('¿Seguro que deseas eliminar este producto?');
     if (ok) {
       await fetch(`/api/products/${productId}`, {
@@ -67,7 +67,7 @@ export default function ProductsPage() {
     }
   }
 
-  async function handleToggleActive(productId: string) {
+  async function handleToggleActive(productId: number) {
     try {
       const res = await fetch(`/api/products/${productId}/toggle-active`, {
         method: 'PATCH',
@@ -80,7 +80,7 @@ export default function ProductsPage() {
     }
   }
 
-  async function handleToggleFeatured(productId: string) {
+  async function handleToggleFeatured(productId: number) {
     try {
       const res = await fetch(`/api/products/${productId}/toggle-featured`, {
         method: 'PATCH',
@@ -114,7 +114,7 @@ export default function ProductsPage() {
     
     // Filtro de categoría
     const matchesCategory = filters.category === 'all' || 
-      product.categoryId === filters.category ||
+      String(product.categoryId) === filters.category ||
       (filters.category === 'uncategorized' && !product.categoryId);
     
     // Filtro de destacado
@@ -222,7 +222,7 @@ export default function ProductsPage() {
               <option value="all">Todas</option>
               <option value="uncategorized">Sin Categoría</option>
               {categories.map((category: any) => (
-                <option key={category._id} value={category._id}>
+                <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
               ))}
@@ -251,7 +251,7 @@ export default function ProductsPage() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProducts.map((product) => (
-          <div key={product._id} className={`border rounded-lg p-4 shadow-sm relative ${product.active ? 'bg-white' : 'bg-gray-100'}`}>
+          <div key={product.id} className={`border rounded-lg p-4 shadow-sm relative ${product.active ? 'bg-white' : 'bg-gray-100'}`}>
             {/* Badges en la esquina superior derecha */}
             <div className="absolute top-2 right-2 flex gap-1 flex-col items-end">
               <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -294,18 +294,18 @@ export default function ProductsPage() {
               </span>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Link href={`/products/${product._id}`}>
+              <Link href={`/products/${product.id}`}>
                 <button className="bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
                   Ver
                 </button>
               </Link>
-              <Link href={`/products/${product._id}/edit`}>
+              <Link href={`/products/${product.id}/edit`}>
                 <button className="bg-yellow-500 text-white px-3 py-2 rounded text-sm hover:bg-yellow-600">
                   Editar
                 </button>
               </Link>
               <button
-                onClick={() => handleToggleActive(product._id)}
+                onClick={() => handleToggleActive(product.id)}
                 className={`px-3 py-2 rounded text-sm font-medium ${
                   product.active 
                     ? 'bg-orange-500 hover:bg-orange-600 text-white' 
@@ -315,7 +315,7 @@ export default function ProductsPage() {
                 {product.active ? 'Desactivar' : 'Activar'}
               </button>
               <button
-                onClick={() => handleToggleFeatured(product._id)}
+                onClick={() => handleToggleFeatured(product.id)}
                 className={`px-3 py-2 rounded text-sm font-medium ${
                   product.featured 
                     ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 

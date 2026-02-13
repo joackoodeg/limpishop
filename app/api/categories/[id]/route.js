@@ -3,14 +3,6 @@ import { categories, products } from '@/lib/db/schema';
 import { eq, and, ne } from 'drizzle-orm';
 import { deleteImage } from '@/lib/cloudinary';
 
-function formatCategory(cat) {
-  return {
-    ...cat,
-    _id: cat.id,
-    image: { url: cat.imageUrl, publicId: cat.imagePublicId },
-  };
-}
-
 // GET - Obtener categoría por ID
 export async function GET(request, { params }) {
   try {
@@ -27,7 +19,7 @@ export async function GET(request, { params }) {
       return Response.json({ error: 'Category not found' }, { status: 404 });
     }
 
-    return Response.json(formatCategory(category));
+    return Response.json(category);
   } catch (error) {
     console.error('Error fetching category:', error);
     return Response.json({ error: 'Error fetching category' }, { status: 500 });
@@ -73,7 +65,7 @@ export async function PUT(request, { params }) {
       updatedAt: new Date().toISOString(),
     }).where(eq(products.categoryId, numId));
 
-    return Response.json({ message: 'Category updated successfully', category: formatCategory(category) });
+    return Response.json({ message: 'Category updated successfully', category });
   } catch (error) {
     console.error('Error updating category:', error);
     return Response.json({ error: 'Error updating category' }, { status: 500 });

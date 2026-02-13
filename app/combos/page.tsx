@@ -27,7 +27,7 @@ export default function CombosPage() {
 
     const toggleComboStatus = async (id, currentStatus) => {
         try {
-            const combo = combos.find(c => c._id === id);
+            const combo = combos.find(c => c.id === id);
             const response = await fetch(`/api/combos/${id}`, {
                 method: 'PUT',
                 headers: {
@@ -296,7 +296,7 @@ export default function CombosPage() {
             ) : (
                 <div className="grid gap-4">
                     {combos.map((combo) => (
-                        <div key={combo._id} className="border rounded-lg p-4 shadow-sm">
+                        <div key={combo.id} className="border rounded-lg p-4 shadow-sm">
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
@@ -326,19 +326,19 @@ export default function CombosPage() {
                                 </div>
                                 <div className="flex gap-2 ml-4">
                                     <Link
-                                        href={`/combos/${combo._id}`}
+                                        href={`/combos/${combo.id}`}
                                         className="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600"
                                     >
                                         Ver
                                     </Link>
                                     <Link
-                                        href={`/combos/${combo._id}/edit`}
+                                        href={`/combos/${combo.id}/edit`}
                                         className="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600"
                                     >
                                         Editar
                                     </Link>
                                     <button
-                                        onClick={() => toggleComboStatus(combo._id, combo.active)}
+                                        onClick={() => toggleComboStatus(combo.id, combo.active)}
                                         className={`px-3 py-1 rounded text-sm ${combo.active
                                             ? 'bg-orange-500 hover:bg-orange-600 text-white'
                                             : 'bg-green-500 hover:bg-green-600 text-white'
@@ -347,7 +347,7 @@ export default function CombosPage() {
                                         {combo.active ? 'Desactivar' : 'Activar'}
                                     </button>
                                     <button
-                                        onClick={() => deleteCombo(combo._id)}
+                                        onClick={() => deleteCombo(combo.id)}
                                         className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
                                     >
                                         Eliminar

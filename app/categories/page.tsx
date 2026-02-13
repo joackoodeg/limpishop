@@ -71,7 +71,7 @@ export default function CategoriesPage() {
         if (!editingCategory || !editingCategory.name.trim()) return;
 
         try {
-            const response = await fetch(`/api/categories/${editingCategory._id}`, {
+            const response = await fetch(`/api/categories/${editingCategory.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -119,8 +119,8 @@ export default function CategoriesPage() {
         if (!selectedProductId || !selectedCategoryId) return;
 
         try {
-            const product = products.find(p => p._id === selectedProductId);
-            const category = categories.find(c => c._id === selectedCategoryId);
+            const product = products.find(p => String(p.id) === selectedProductId);
+            const category = categories.find(c => String(c.id) === selectedCategoryId);
 
             const response = await fetch(`/api/products/${selectedProductId}`, {
                 method: 'PUT',
@@ -149,7 +149,7 @@ export default function CategoriesPage() {
         if (!confirm('¿Quieres quitar este producto de su categoría?')) return;
 
         try {
-            const product = products.find(p => p._id === productId);
+            const product = products.find(p => p.id === productId);
             const response = await fetch(`/api/products/${productId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -174,7 +174,7 @@ export default function CategoriesPage() {
     const handleImageUploaded = (data) => {
         // Actualizar la categoría en el estado local
         setCategories(prev => prev.map(cat => 
-            cat._id === data.category._id ? data.category : cat
+            cat.id === data.category.id ? data.category : cat
         ));
         setError('');
     };
@@ -257,7 +257,7 @@ export default function CategoriesPage() {
                 ) : (
                     <div className="space-y-2">
                         {categories.map((category) => (
-                            <div key={category._id} className="border rounded-lg p-4">
+                            <div key={category.id} className="border rounded-lg p-4">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex-1">
                                         <h3 className="font-medium text-lg">{category.name}</h3>
@@ -267,10 +267,10 @@ export default function CategoriesPage() {
                                     </div>
                                     <div className="flex space-x-2 ml-4">
                                         <button
-                                            onClick={() => toggleImageUpload(category._id)}
+                                            onClick={() => toggleImageUpload(category.id)}
                                             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
                                         >
-                                            {category.image?.url ? 'Cambiar imagen' : 'Agregar imagen'}
+                                            {category.imageUrl ? 'Cambiar imagen' : 'Agregar imagen'}
                                         </button>
                                         <button
                                             onClick={() => setEditingCategory(category)}
@@ -279,7 +279,7 @@ export default function CategoriesPage() {
                                             Editar
                                         </button>
                                         <button
-                                            onClick={() => handleDeleteCategory(category._id)}
+                                            onClick={() => handleDeleteCategory(category.id)}
                                             className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm"
                                         >
                                             Eliminar
@@ -297,12 +297,12 @@ export default function CategoriesPage() {
                                     />
                                     
                                     {/* Upload de imagen */}
-                                    {showImageUpload[category._id] && (
+                                    {showImageUpload[category.id] && (
                                         <div className="flex-1">
                                             <ImageUpload
                                                 entityType="category"
-                                                entityId={category._id}
-                                                currentImage={category.image?.url}
+                                                entityId={category.id}
+                                                currentImage={category.imageUrl}
                                                 onImageUploaded={handleImageUploaded}
                                                 className="w-full"
                                             />
@@ -330,7 +330,7 @@ export default function CategoriesPage() {
                             >
                                 <option value="">Seleccionar producto</option>
                                 {products.map((product) => (
-                                    <option key={product._id} value={product._id}>
+                                    <option key={product.id} value={product.id}>
                                         {product.name} {product.categoryName && `(${product.categoryName})`}
                                     </option>
                                 ))}
@@ -346,7 +346,7 @@ export default function CategoriesPage() {
                             >
                                 <option value="">Seleccionar categoría</option>
                                 {categories.map((category) => (
-                                    <option key={category._id} value={category._id}>
+                                    <option key={category.id} value={category.id}>
                                         {category.name}
                                     </option>
                                 ))}
@@ -367,9 +367,9 @@ export default function CategoriesPage() {
                 <h2 className="text-xl font-semibold mb-4">Productos por Categoría</h2>
                 
                 {categories.map((category) => {
-                    const categoryProducts = products.filter(p => p.categoryId === category._id);
+                    const categoryProducts = products.filter(p => p.categoryId === category.id);
                     return (
-                        <div key={category._id} className="mb-6">
+                        <div key={category.id} className="mb-6">
                             <h3 className="text-lg font-medium text-gray-800 mb-2">
                                 {category.name} ({categoryProducts.length} productos)
                             </h3>
@@ -378,10 +378,10 @@ export default function CategoriesPage() {
                             ) : (
                                 <div className="ml-4 space-y-1">
                                     {categoryProducts.map((product) => (
-                                        <div key={product._id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                        <div key={product.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                                             <span>{product.name}</span>
                                             <button
-                                                onClick={() => handleRemoveProductFromCategory(product._id)}
+                                                onClick={() => handleRemoveProductFromCategory(product.id)}
                                                 className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-xs"
                                             >
                                                 Quitar
@@ -404,7 +404,7 @@ export default function CategoriesPage() {
                     ) : (
                         <div className="ml-4 space-y-1">
                             {products.filter(p => !p.categoryId).map((product) => (
-                                <div key={product._id} className="p-2 bg-gray-50 rounded">
+                                <div key={product.id} className="p-2 bg-gray-50 rounded">
                                     <span>{product.name}</span>
                                 </div>
                             ))}

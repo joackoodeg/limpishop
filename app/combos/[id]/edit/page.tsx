@@ -81,7 +81,7 @@ export default function EditComboPage() {
 
     const addProductToCombo = (product) => {
         // Verificar si el producto ya está en el combo
-        const existingProduct = comboProducts.find(p => p.productId === product._id);
+        const existingProduct = comboProducts.find(p => p.productId === product.id);
         if (existingProduct) {
             alert('Este producto ya está en el combo');
             return;
@@ -91,7 +91,7 @@ export default function EditComboPage() {
         const price = product.prices && product.prices.length > 0 ? product.prices[0].price : 0;
 
         const newComboProduct = {
-            productId: product._id,
+            productId: product.id,
             productName: product.name,
             quantity: 1,
             price: price
@@ -297,7 +297,7 @@ export default function EditComboPage() {
                                 </div>
                             ) : (
                                 filteredProducts.map((product) => (
-                                    <div key={product._id} className="border rounded-lg p-3">
+                                    <div key={product.id} className="border rounded-lg p-3">
                                         <h3 className="font-medium text-sm mb-1">{product.name}</h3>
                                         <p className="text-xs text-gray-500 mb-2">Stock: {product.stock}</p>
                                         {product.prices && product.prices.length > 0 && (
@@ -307,9 +307,9 @@ export default function EditComboPage() {
                                             type="button"
                                             onClick={() => addProductToCombo(product)}
                                             className="w-full bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
-                                            disabled={comboProducts.some(p => p.productId === product._id)}
+                                            disabled={comboProducts.some(p => p.productId === product.id)}
                                         >
-                                            {comboProducts.some(p => p.productId === product._id) ? 'Ya agregado' : 'Agregar'}
+                                            {comboProducts.some(p => p.productId === product.id) ? 'Ya agregado' : 'Agregar'}
                                         </button>
                                     </div>
                                 ))

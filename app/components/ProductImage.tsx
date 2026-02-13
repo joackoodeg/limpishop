@@ -16,9 +16,9 @@ export default function ProductImage({
   // Determinar qué imagen usar
   const getImageInfo = () => {
     // 1. Imagen del producto
-    if (product?.image?.url && !imageError) {
+    if (product?.imageUrl && !imageError) {
       return {
-        url: product.image.url,
+        url: product.imageUrl,
         source: 'product',
         alt: `Imagen de ${product.name}`
       };
@@ -26,9 +26,9 @@ export default function ProductImage({
     
     // 2. Imagen de la categoría
     const categoryToCheck = category || product?.category;
-    if (categoryToCheck?.image?.url && !imageError) {
+    if (categoryToCheck?.imageUrl && !imageError) {
       return {
-        url: categoryToCheck.image.url,
+        url: categoryToCheck.imageUrl,
         source: 'category',
         alt: `Imagen de categoría ${categoryToCheck.name}`
       };

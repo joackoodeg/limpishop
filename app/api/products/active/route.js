@@ -22,8 +22,6 @@ export async function GET() {
 
     const result = activeProducts.map(p => ({
       ...p,
-      _id: p.id,
-      image: { url: p.imageUrl, publicId: p.imagePublicId },
       prices: pricesByProduct[p.id] || [],
     }));
 

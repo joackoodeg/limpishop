@@ -6,7 +6,6 @@ import { eq } from 'drizzle-orm';
 function formatCombo(combo, comboProds) {
   return {
     ...combo,
-    _id: combo.id,
     products: comboProds.map(cp => ({
       productId: cp.productId,
       productName: cp.productName,

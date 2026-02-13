@@ -11,7 +11,7 @@ export default function ProductDetailsPage() {
   }
 
   interface Product {
-    _id: string;
+    id: number;
     name: string;
     prices: Price[];
     cost?: number;
@@ -29,7 +29,7 @@ export default function ProductDetailsPage() {
       async function fetchProduct() {
         const res = await fetch(`/api/products`);
         const products = await res.json();
-        const product = products.find(p => p._id === id);
+        const product = products.find(p => p.id === Number(id));
         setProduct(product);
       }
       fetchProduct();
@@ -40,7 +40,7 @@ export default function ProductDetailsPage() {
     if (!product) return;
     const ok = confirm('¿Seguro que deseas eliminar este producto?');
     if (ok) {
-      await fetch(`/api/products/${product._id}`, {
+      await fetch(`/api/products/${product.id}`, {
         method: 'DELETE',
       });
       router.push('/products');
@@ -69,7 +69,7 @@ export default function ProductDetailsPage() {
         <p className="text-gray-700 mb-2"><strong>Stock:</strong> {product.stock}</p>
         <p className="text-gray-700 mb-4"><strong>Descripción:</strong> {product.description}</p>
         <div className="flex space-x-2">
-          <Link href={`/products/${product._id}/edit`} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">
+          <Link href={`/products/${product.id}/edit`} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">
             Editar
           </Link>
           <button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">

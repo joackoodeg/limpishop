@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 interface ProductStat {
-    _id: string;
+    id: number;
     productName: string;
     quantity: number;
     revenue: number;
@@ -93,7 +93,7 @@ export default function SalesSummaryPage() {
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {stats.products.map((p) => (
-                                    <tr key={p._id}>
+                                    <tr key={p.id || p.productName}>
                                         <td className="px-4 py-2 whitespace-nowrap">{p.productName}</td>
                                         <td className="px-4 py-2 whitespace-nowrap">{p.quantity}</td>
                                         <td className="px-4 py-2 whitespace-nowrap">${p.revenue.toFixed(2)}</td>

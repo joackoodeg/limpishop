@@ -2,19 +2,11 @@ import { db } from '@/lib/db';
 import { categories } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-function formatCategory(cat) {
-  return {
-    ...cat,
-    _id: cat.id,
-    image: { url: cat.imageUrl, publicId: cat.imagePublicId },
-  };
-}
-
 // GET - Obtener todas las categorías
 export async function GET() {
   try {
     const allCategories = await db.select().from(categories).orderBy(categories.name);
-    return Response.json(allCategories.map(formatCategory));
+    return Response.json(allCategories);
   } catch (error) {
     console.error('Error fetching categories:', error);
     return Response.json({ error: 'Error fetching categories' }, { status: 500 });
@@ -41,7 +33,7 @@ export async function POST(request) {
       description: description?.trim() || '',
     }).returning();
 
-    return Response.json(formatCategory(category), { status: 201 });
+    return Response.json(category, { status: 201 });
   } catch (error) {
     console.error('Error creating category:', error);
     return Response.json({ error: 'Error creating category' }, { status: 500 });

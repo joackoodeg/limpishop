@@ -8,8 +8,7 @@ export async function GET() {
     const allProducts = await db.select().from(products).orderBy(products.name);
 
     // Attach prices for each product
-    const productIds = allProducts.map(p => p.id);
-    const allPrices = productIds.length > 0
+    const allPrices = allProducts.length > 0
       ? await db.select().from(productPrices)
       : [];
 
@@ -21,8 +20,6 @@ export async function GET() {
 
     const result = allProducts.map(p => ({
       ...p,
-      _id: p.id,
-      image: { url: p.imageUrl, publicId: p.imagePublicId },
       prices: pricesByProduct[p.id] || [],
     }));
 
@@ -73,8 +70,6 @@ export async function POST(request) {
 
     const result = {
       ...inserted,
-      _id: inserted.id,
-      image: { url: inserted.imageUrl, publicId: inserted.imagePublicId },
       prices: insertedPrices.map(p => ({ quantity: p.quantity, price: p.price })),
     };
 

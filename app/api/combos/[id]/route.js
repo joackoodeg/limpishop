@@ -6,7 +6,6 @@ import { eq } from 'drizzle-orm';
 function formatCombo(combo, comboProds) {
   return {
     ...combo,
-    _id: combo.id,
     products: comboProds.map(cp => ({
       productId: cp.productId,
       productName: cp.productName,
@@ -102,8 +101,6 @@ export async function DELETE(request, { params }) {
     if (!combo) {
       return NextResponse.json({ error: 'Combo not found' }, { status: 404 });
     }
-
-    // comboProducts are cascade-deleted
 
     return NextResponse.json({ message: 'Combo deleted successfully' });
   } catch (e) {

@@ -7,8 +7,6 @@ import { uploadImage, deleteImage } from '@/lib/cloudinary';
 function formatProduct(product, prices) {
   return {
     ...product,
-    _id: product.id,
-    image: { url: product.imageUrl, publicId: product.imagePublicId },
     prices: prices.map(p => ({ quantity: p.quantity, price: p.price })),
   };
 }

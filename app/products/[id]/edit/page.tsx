@@ -18,7 +18,7 @@ export default function EditProductPage() {
       async function fetchProduct() {
         const res = await fetch(`/api/products`);
         const products = await res.json();
-        const product = products.find(p => p._id === id);
+        const product = products.find(p => p.id === Number(id));
         if (product) {
           setName(product.name);
           setPrices(product.prices && product.prices.length > 0 ? product.prices : [{ quantity: 1, price: '' }]);

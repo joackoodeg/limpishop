@@ -10,7 +10,7 @@ interface Price {
 }
 
 interface Product {
-    _id: string;
+    id: number;
     name: string;
     prices: Price[];
     stock: number | string;

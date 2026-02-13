@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Product {
-  _id: string;
+  id: number;
   name: string;
   prices: { quantity: number; price: number }[];
   stock: number;
@@ -42,7 +42,7 @@ export default function NewSalePage() {
     const initialVariants: { [key: string]: number } = {};
     data.forEach((product: Product) => {
       if (product.prices && product.prices.length > 0) {
-        initialVariants[product._id] = 0;
+        initialVariants[product.id] = 0;
       }
     });
     setSelectedVariants(initialVariants);
@@ -61,11 +61,11 @@ export default function NewSalePage() {
       return;
     }
 
-    const selectedVariantIndex = selectedVariants[product._id] || 0;
+    const selectedVariantIndex = selectedVariants[product.id] || 0;
     const variant = product.prices[selectedVariantIndex];
 
     const existingItemIndex = cart.findIndex(
-      item => item.productId === product._id && item.variant.quantity === variant.quantity
+      item => item.productId === product.id && item.variant.quantity === variant.quantity
     );
 
     if (existingItemIndex >= 0) {
@@ -76,7 +76,7 @@ export default function NewSalePage() {
     } else {
       // Add new item
       const newItem: CartItem = {
-        productId: product._id,
+        productId: product.id,
         name: product.name,
         quantity: 1,
         price: variant.price,
@@ -195,7 +195,7 @@ export default function NewSalePage() {
 
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {filteredProducts.map((product) => (
-              <div key={product._id} className="border rounded p-4 bg-white shadow-sm">
+              <div key={product.id} className="border rounded p-4 bg-white shadow-sm">
                 <h3 className="font-semibold">{product.name}</h3>
                 <p className="text-sm text-gray-600 mb-2">{product.description}</p>
                 <p className="text-sm text-gray-500 mb-3">Stock: {product.stock}</p>
@@ -206,8 +206,8 @@ export default function NewSalePage() {
                       Variación:
                     </label>
                     <select
-                      value={selectedVariants[product._id] || 0}
-                      onChange={(e) => handleVariantChange(product._id, parseInt(e.target.value))}
+                      value={selectedVariants[product.id] || 0}
+                      onChange={(e) => handleVariantChange(product.id, parseInt(e.target.value))}
                       className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                     >
                       {product.prices.map((variant, index) => (
