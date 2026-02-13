@@ -23,9 +23,9 @@ export default function ImageUpload({
       return;
     }
     
-    // Validar tamaño (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('El archivo es demasiado grande. Máximo 5MB');
+    // Validar tamaño (máximo 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('El archivo es demasiado grande. Máximo 10MB');
       return;
     }
     
@@ -46,7 +46,11 @@ export default function ImageUpload({
       formData.append('image', file);
       
       // Construir URL correcta según el tipo de entidad
-      const apiPath = entityType === 'category' ? 'categories' : `${entityType}s`;
+      const apiPath = entityType === 'category'
+        ? 'categories'
+        : entityType === 'config'
+          ? 'config'
+          : `${entityType}s`;
       const response = await fetch(`/api/${apiPath}/${entityId}/image`, {
         method: 'POST',
         body: formData
