@@ -9,6 +9,9 @@ export default function EditProductPage() {
   const [cost, setCost] = useState('');
   const [stock, setStock] = useState('');
   const [description, setDescription] = useState('');
+  const [active, setActive] = useState(true);
+  const [featured, setFeatured] = useState(false);
+  const [categoryId, setCategoryId] = useState<number | null>(null);
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const { id } = params;
@@ -16,15 +19,18 @@ export default function EditProductPage() {
   useEffect(() => {
     if (id) {
       async function fetchProduct() {
-        const res = await fetch(`/api/products`);
-        const products = await res.json();
-        const product = products.find(p => p.id === Number(id));
+        const res = await fetch(`/api/products/${id}`);
+        if (!res.ok) return;
+        const product = await res.json();
         if (product) {
           setName(product.name);
           setPrices(product.prices && product.prices.length > 0 ? product.prices : [{ quantity: 1, price: '' }]);
           setCost(product.cost ?? '');
           setStock(product.stock);
           setDescription(product.description ?? '');
+          setActive(product.active ?? true);
+          setFeatured(product.featured ?? false);
+          setCategoryId(product.categoryId ?? null);
         }
       }
       fetchProduct();
@@ -36,7 +42,7 @@ export default function EditProductPage() {
     await fetch(`/api/products/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, prices, cost, stock, description }),
+      body: JSON.stringify({ name, prices, cost, stock, description, active, featured, categoryId }),
     });
     router.push('/products');
   }

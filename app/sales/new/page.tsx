@@ -12,7 +12,7 @@ interface Product {
 }
 
 interface CartItem {
-  productId: string;
+  productId: number;
   name: string;
   quantity: number;
   price: number;
@@ -48,7 +48,7 @@ export default function NewSalePage() {
     setSelectedVariants(initialVariants);
   }
 
-  function handleVariantChange(productId: string, variantIndex: number) {
+  function handleVariantChange(productId: number, variantIndex: number) {
     setSelectedVariants(prev => ({
       ...prev,
       [productId]: variantIndex

@@ -24,13 +24,12 @@ export default function ProductImage({
       };
     }
     
-    // 2. Imagen de la categoría
-    const categoryToCheck = category || product?.category;
-    if (categoryToCheck?.imageUrl && !imageError) {
+    // 2. Imagen de la categoría (pasada como prop)
+    if (category?.imageUrl && !imageError) {
       return {
-        url: categoryToCheck.imageUrl,
+        url: category.imageUrl,
         source: 'category',
-        alt: `Imagen de categoría ${categoryToCheck.name}`
+        alt: `Imagen de categoría ${category.name || product?.categoryName || 'categoría'}`
       };
     }
     

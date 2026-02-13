@@ -17,6 +17,11 @@ export default function ProductDetailsPage() {
     cost?: number;
     stock: number;
     description?: string;
+    active?: boolean;
+    featured?: boolean;
+    categoryName?: string;
+    categoryId?: number;
+    imageUrl?: string;
   }
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -27,10 +32,11 @@ export default function ProductDetailsPage() {
   useEffect(() => {
     if (id) {
       async function fetchProduct() {
-        const res = await fetch(`/api/products`);
-        const products = await res.json();
-        const product = products.find(p => p.id === Number(id));
-        setProduct(product);
+        const res = await fetch(`/api/products/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setProduct(data);
+        }
       }
       fetchProduct();
     }
@@ -54,7 +60,18 @@ export default function ProductDetailsPage() {
   return (
     <div className="container mx-auto p-4">
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
+        <div className="flex items-center gap-3 mb-4">
+          <h1 className="text-3xl font-bold">{product.name}</h1>
+          <span className={`px-2 py-1 rounded text-xs font-medium ${product.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {product.active ? 'Activo' : 'Inactivo'}
+          </span>
+          {product.featured && (
+            <span className="bg-yellow-400 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">⭐ Destacado</span>
+          )}
+        </div>
+        {product.categoryName && (
+          <p className="text-sm text-blue-600 mb-3">📁 {product.categoryName}</p>
+        )}
         <div className="mb-4">
           <h2 className="text-xl font-semibold mb-2">Precios</h2>
           <ul>

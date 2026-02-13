@@ -47,7 +47,7 @@ export default function ImageUpload({
       
       // Construir URL correcta según el tipo de entidad
       const apiPath = entityType === 'category' ? 'categories' : `${entityType}s`;
-      const response = await fetch(`/api/${apiPath}/image/${entityId}`, {
+      const response = await fetch(`/api/${apiPath}/${entityId}/image`, {
         method: 'POST',
         body: formData
       });
@@ -83,7 +83,7 @@ export default function ImageUpload({
     try {
       // Construir URL correcta según el tipo de entidad
       const apiPath = entityType === 'category' ? 'categories' : `${entityType}s`;
-      const response = await fetch(`/api/${apiPath}/image/${entityId}`, {
+      const response = await fetch(`/api/${apiPath}/${entityId}/image`, {
         method: 'DELETE'
       });
       
