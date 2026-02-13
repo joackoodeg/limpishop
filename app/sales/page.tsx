@@ -121,7 +121,12 @@ export default function SalesPage() {
               <CardContent className="pt-4">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h3 className="font-semibold">Venta #{sale.id}</h3>
+                    <Link
+                      href={`/sales/${sale.id}`}
+                      className="font-semibold hover:underline"
+                    >
+                      Venta #{sale.id}
+                    </Link>
                     <p className="text-sm text-muted-foreground">{new Date(sale.date).toLocaleString()}</p>
                     <p className="text-sm text-muted-foreground capitalize">Pago: {sale.paymentMethod}</p>
                   </div>
