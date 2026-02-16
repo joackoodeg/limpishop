@@ -270,7 +270,7 @@ export default function ResumenPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Unidades vendidas</p>
+                      <p className="text-sm font-medium text-muted-foreground">Productos vendidos</p>
                       <p className="text-2xl font-bold mt-1">
                         {stats.overall.units.toLocaleString('es-AR')}
                       </p>

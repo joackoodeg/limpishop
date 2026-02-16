@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import PageHeader from '../../components/PageHeader';
+import { getUnitLabel, getUnitShort, formatStock } from '@/lib/units';
 
 interface Product {
   id: number;
@@ -15,6 +16,7 @@ interface Product {
   prices: { quantity: number; price: number }[];
   stock: number;
   description: string;
+  unit: string;
 }
 
 interface CartItem {
@@ -23,6 +25,7 @@ interface CartItem {
   quantity: number;
   price: number;
   variant: { quantity: number; price: number };
+  unit: string;
 }
 
 export default function NewSalePage() {
@@ -77,6 +80,7 @@ export default function NewSalePage() {
         quantity: 1,
         price: variant.price,
         variant,
+        unit: product.unit || 'unidad',
       }]);
     }
     setCustomTotal(null);
@@ -176,7 +180,7 @@ export default function NewSalePage() {
                   <div key={product.id} className="border rounded-lg p-3">
                     <h3 className="font-semibold text-sm">{product.name}</h3>
                     <p className="text-xs text-muted-foreground mb-1">{product.description}</p>
-                    <p className="text-xs text-muted-foreground mb-2">Stock: {product.stock}</p>
+                    <p className="text-xs text-muted-foreground mb-2">Stock: {formatStock(product.stock, product.unit || 'unidad')}</p>
 
                     {product.prices && product.prices.length > 0 && (
                       <div className="mb-2">
@@ -188,7 +192,7 @@ export default function NewSalePage() {
                         >
                           {product.prices.map((variant, index) => (
                             <option key={index} value={index}>
-                              {variant.quantity} unidad(es) - ${variant.price}
+                              {variant.quantity} {getUnitLabel(product.unit || 'unidad', variant.quantity)} - ${variant.price}
                             </option>
                           ))}
                         </select>
@@ -227,7 +231,7 @@ export default function NewSalePage() {
                         <div className="flex items-center justify-between mb-2">
                           <div>
                             <h4 className="font-medium text-sm">{item.name}</h4>
-                            <p className="text-xs text-muted-foreground">{item.variant.quantity} unidad(es)</p>
+                            <p className="text-xs text-muted-foreground">{item.variant.quantity} {getUnitLabel(item.unit, item.variant.quantity)}</p>
                           </div>
                           <Button size="sm" variant="ghost" className="text-destructive h-7 w-7 p-0" onClick={() => removeFromCart(index)}>
                             ×

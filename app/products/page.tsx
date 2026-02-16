@@ -33,6 +33,7 @@ interface Product {
   name: string;
   prices: Price[];
   stock: number;
+  unit: string;
   description: string;
   active: boolean;
   featured: boolean;
@@ -115,7 +116,7 @@ export default function ProductsPage() {
     let matchesStock = true;
     if (filters.stock === 'inStock') matchesStock = product.stock > 5;
     else if (filters.stock === 'lowStock') matchesStock = product.stock > 0 && product.stock <= 5;
-    else if (filters.stock === 'outOfStock') matchesStock = product.stock === 0;
+    else if (filters.stock === 'outOfStock') matchesStock = product.stock <= 0;
     const matchesCategory = filters.category === 'all' ||
       String(product.categoryId) === filters.category ||
       (filters.category === 'uncategorized' && !product.categoryId);
@@ -259,7 +260,7 @@ export default function ProductsPage() {
                 <div className="flex flex-wrap gap-1 mb-2">
                   <StatusBadge type={product.active ? 'active' : 'inactive'} />
                   {product.featured && <StatusBadge type="featured" />}
-                  <StatusBadge type={stockStatus(product.stock)} label={stockLabel(product.stock)} />
+                  <StatusBadge type={stockStatus(product.stock, product.unit)} label={stockLabel(product.stock, product.unit)} />
                 </div>
 
                 {/* Name & category */}
@@ -389,7 +390,7 @@ export default function ProductsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <StatusBadge type={stockStatus(product.stock)} label={stockLabel(product.stock)} />
+                        <StatusBadge type={stockStatus(product.stock, product.unit)} label={stockLabel(product.stock, product.unit)} />
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">

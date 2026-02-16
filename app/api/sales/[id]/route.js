@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { sales, saleItems, products } from '@/lib/db/schema';
+import { sales, saleItems, products, stockMovements } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 
 export async function GET(request, { params }) {
@@ -27,6 +27,7 @@ export async function GET(request, { params }) {
         quantity: item.quantity,
         price: item.price,
         size: item.size,
+        unit: item.unit || 'unidad',
       })),
     };
 
@@ -55,14 +56,32 @@ export async function DELETE(request, { params }) {
     // Get sale items to restore stock
     const items = await db.select().from(saleItems).where(eq(saleItems.saleId, numId));
 
-    // Restore stock for each item
+    // Restore stock for each item and register devolucion movements
     for (const item of items) {
       if (item.productId) {
-        const stockIncrement = Number(item.quantity) * Number(item.size || 1);
+        const stockIncrement = parseFloat(item.quantity) * parseFloat(item.size || 1);
+
+        // Get current stock
+        const [currentProduct] = await db.select({ stock: products.stock })
+          .from(products).where(eq(products.id, item.productId));
+        const prevStock = currentProduct?.stock || 0;
+        const newStock = prevStock + stockIncrement;
+
         await db.update(products).set({
-          stock: sql`${products.stock} + ${stockIncrement}`,
+          stock: newStock,
           updatedAt: new Date().toISOString(),
         }).where(eq(products.id, item.productId));
+
+        await db.insert(stockMovements).values({
+          productId: item.productId,
+          productName: item.productName,
+          type: 'devolucion',
+          quantity: stockIncrement,
+          previousStock: prevStock,
+          newStock: newStock,
+          note: `Devolución por eliminación de venta #${numId}`,
+          referenceId: numId,
+        });
       }
     }
 

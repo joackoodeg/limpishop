@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Trash2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { getUnitShort } from '@/lib/units';
 
 interface SaleItem {
   productId: number;
@@ -16,6 +17,7 @@ interface SaleItem {
   quantity: number;
   price: number;
   size: number;
+  unit: string;
 }
 
 interface Sale {
@@ -116,7 +118,7 @@ export default function SaleDetailsPage() {
               <div key={index} className="flex justify-between items-center text-sm">
                 <div>
                   <span className="font-medium">{item.productName}</span>
-                  <span className="text-muted-foreground ml-2">({item.size} uds)</span>
+                  <span className="text-muted-foreground ml-2">({item.size} {getUnitShort(item.unit || 'unidad')})</span>
                 </div>
                 <div className="text-right">
                   <span className="text-muted-foreground">{item.quantity} × ${item.price} = </span>

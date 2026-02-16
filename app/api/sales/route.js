@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { sales, saleItems, products } from '@/lib/db/schema';
+import { sales, saleItems, products, stockMovements } from '@/lib/db/schema';
 import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
 
 export async function GET(request) {
@@ -39,6 +39,7 @@ export async function GET(request) {
         quantity: item.quantity,
         price: item.price,
         size: item.size,
+        unit: item.unit || 'unidad',
       });
     }
 
@@ -65,13 +66,15 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Payment method is required' }, { status: 400 });
     }
 
-    // 1. Update stock for each product in the cart
+    // 1. Read current stock for each product before any changes
+    const stockSnapshots = {};
     for (const item of items) {
-      const stockDecrement = Number(item.quantity) * Number(item.variant.quantity);
-      await db.update(products).set({
-        stock: sql`${products.stock} - ${stockDecrement}`,
-        updatedAt: new Date().toISOString(),
-      }).where(eq(products.id, Number(item.productId)));
+      const [currentProduct] = await db.select({ stock: products.stock, name: products.name })
+        .from(products).where(eq(products.id, Number(item.productId)));
+      stockSnapshots[item.productId] = {
+        prevStock: currentProduct?.stock || 0,
+        name: currentProduct?.name || item.name,
+      };
     }
 
     // 2. Use provided grandTotal or calculate it
@@ -91,12 +94,36 @@ export async function POST(request) {
       saleId: newSale.id,
       productId: Number(item.productId),
       productName: item.name,
-      quantity: Number(item.quantity),
+      quantity: parseFloat(item.quantity),
       price: Number(item.price),
-      size: Number(item.variant.quantity),
+      size: parseFloat(item.variant.quantity),
+      unit: item.unit || 'unidad',
     }));
 
     await db.insert(saleItems).values(saleItemsData);
+
+    // 5. Update stock and register movements for each product
+    for (const item of items) {
+      const stockDecrement = parseFloat(item.quantity) * parseFloat(item.variant.quantity);
+      const snapshot = stockSnapshots[item.productId];
+      const newStock = Math.max(0, snapshot.prevStock - stockDecrement);
+
+      await db.update(products).set({
+        stock: newStock,
+        updatedAt: new Date().toISOString(),
+      }).where(eq(products.id, Number(item.productId)));
+
+      await db.insert(stockMovements).values({
+        productId: Number(item.productId),
+        productName: snapshot.name,
+        type: 'venta',
+        quantity: -stockDecrement,
+        previousStock: snapshot.prevStock,
+        newStock: newStock,
+        note: `Venta #${newSale.id}`,
+        referenceId: newSale.id,
+      });
+    }
 
     // Fetch inserted items back
     const insertedItems = await db.select().from(saleItems).where(eq(saleItems.saleId, newSale.id));
@@ -109,6 +136,7 @@ export async function POST(request) {
         quantity: si.quantity,
         price: si.price,
         size: si.size,
+        unit: si.unit || 'unidad',
       })),
     };
 

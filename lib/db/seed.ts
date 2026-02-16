@@ -12,7 +12,9 @@ import {
   combos,
   comboProducts,
   storeConfig,
+  stockMovements,
 } from './schema';
+import { eq } from 'drizzle-orm';
 
 const client = createClient({
   url: process.env.TURSO_DATABASE_URL!,
@@ -28,13 +30,33 @@ function daysAgo(n: number) {
   return d.toISOString().replace('T', ' ').slice(0, 19);
 }
 
+function daysAgoWithHour(n: number, hour: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(hour, Math.floor(Math.random() * 60), 0, 0);
+  return d.toISOString().replace('T', ' ').slice(0, 19);
+}
+
 const now = daysAgo(0);
 
 // ── Seed ────────────────────────────────────────────────────────────────────
 async function seed() {
   console.log('🌱 Iniciando seed de datos de demostración...\n');
 
-  // ── 0. Configuración del Local ─────────────────────────────────────────
+  // ── 0. Limpiar tablas ──────────────────────────────────────────────────
+  console.log('🗑️  Limpiando tablas existentes...');
+  await db.delete(stockMovements);
+  await db.delete(saleItems);
+  await db.delete(sales);
+  await db.delete(comboProducts);
+  await db.delete(combos);
+  await db.delete(productPrices);
+  await db.delete(products);
+  await db.delete(categories);
+  await db.delete(storeConfig);
+  console.log('   ✅ Tablas limpiadas\n');
+
+  // ── 1. Configuración del Local ─────────────────────────────────────────
   console.log('⚙️  Creando configuración del local...');
   await db.insert(storeConfig).values({
     storeName: 'LimpiShop',
@@ -48,7 +70,7 @@ async function seed() {
   });
   console.log('   ✅ Configuración del local creada\n');
 
-  // ── 1. Categorías ──────────────────────────────────────────────────────
+  // ── 2. Categorías ──────────────────────────────────────────────────────
   console.log('📁 Creando categorías...');
   const categoryData = [
     { name: 'Limpieza de pisos', description: 'Productos para todo tipo de pisos y superficies' },
@@ -70,8 +92,8 @@ async function seed() {
     catMap[c.name] = { id: c.id, name: c.name };
   }
 
-  // ── 2. Productos ───────────────────────────────────────────────────────
-  console.log('📦 Creando productos...');
+  // ── 3. Productos + Stock Inicial ───────────────────────────────────────
+  console.log('📦 Creando productos con stock inicial...');
   const productData = [
     // Limpieza de pisos
     { name: 'Lavandina concentrada', cost: 300, stock: 45, description: 'Lavandina concentrada al 4%. Desinfecta y blanquea.', cat: 'Limpieza de pisos', active: true, featured: true },
@@ -111,6 +133,8 @@ async function seed() {
   ];
 
   const insertedProducts = [];
+  const productCreatedAt = daysAgo(28);
+
   for (const p of productData) {
     const cat = catMap[p.cat];
     const [product] = await db.insert(products).values({
@@ -122,14 +146,28 @@ async function seed() {
       categoryName: cat.name,
       active: p.active,
       featured: p.featured,
-      createdAt: daysAgo(28),
+      createdAt: productCreatedAt,
       updatedAt: daysAgo(Math.floor(Math.random() * 7)),
     }).returning();
     insertedProducts.push(product);
-  }
-  console.log(`   ✅ ${insertedProducts.length} productos creados`);
 
-  // ── 3. Precios por producto (variantes de cantidad) ────────────────────
+    // ── Registrar movimiento de stock inicial ──
+    if (p.stock > 0) {
+      await db.insert(stockMovements).values({
+        productId: product.id,
+        productName: product.name,
+        type: 'inicial',
+        quantity: p.stock,
+        previousStock: 0,
+        newStock: p.stock,
+        note: 'Stock inicial al crear el producto',
+        createdAt: productCreatedAt,
+      });
+    }
+  }
+  console.log(`   ✅ ${insertedProducts.length} productos creados con stock inicial registrado`);
+
+  // ── 4. Precios por producto (variantes de cantidad) ────────────────────
   console.log('💲 Asignando precios...');
   let priceCount = 0;
 
@@ -153,7 +191,7 @@ async function seed() {
   }
   console.log(`   ✅ ${priceCount} precios asignados`);
 
-  // ── 4. Combos ──────────────────────────────────────────────────────────
+  // ── 5. Combos ──────────────────────────────────────────────────────────
   console.log('🎁 Creando combos...');
 
   const comboData = [
@@ -205,10 +243,10 @@ async function seed() {
   ];
 
   // Mapa producto nombre → { id, price del litro (qty=2) }
-  const prodMap: Record<string, { id: number; price: number }> = {};
+  const prodMap: Record<string, { id: number; price: number; cost: number }> = {};
   for (const p of insertedProducts) {
     const base = (p.cost || 200) * 2.5;
-    prodMap[p.name] = { id: p.id, price: Math.round(base / 50) * 50 };
+    prodMap[p.name] = { id: p.id, price: Math.round(base / 50) * 50, cost: p.cost || 200 };
   }
 
   for (const combo of comboData) {
@@ -239,41 +277,96 @@ async function seed() {
   }
   console.log(`   ✅ ${comboData.length} combos creados`);
 
-  // ── 5. Ventas de los últimos 30 días ───────────────────────────────────
-  console.log('🧾 Generando historial de ventas...');
+  // ── 6. Reposiciones de stock (simuladas) ───────────────────────────────
+  console.log('📥 Generando reposiciones de stock...');
+  let repoCount = 0;
+
+  const reposiciones = [
+    { name: 'Lavandina concentrada', qty: 20, day: 20, note: 'Reposición semanal' },
+    { name: 'Detergente concentrado', qty: 30, day: 18, note: 'Pedido proveedor ABC' },
+    { name: 'Limpiador de pisos lavanda', qty: 25, day: 15, note: 'Reposición quincenal' },
+    { name: 'Jabón líquido para ropa', qty: 15, day: 14, note: 'Reposición semanal' },
+    { name: 'Limpiador multiuso', qty: 20, day: 12, note: 'Pedido proveedor XYZ' },
+    { name: 'Gel desinfectante WC', qty: 15, day: 10, note: 'Reposición quincenal' },
+    { name: 'Lavandina concentrada', qty: 15, day: 8, note: 'Reposición semanal' },
+    { name: 'Detergente concentrado', qty: 20, day: 6, note: 'Pedido proveedor ABC' },
+    { name: 'Suavizante para ropa', qty: 10, day: 5, note: 'Reposición de emergencia - stock bajo' },
+    { name: 'Alcohol en gel', qty: 25, day: 3, note: 'Pedido especial por temporada' },
+    { name: 'Limpiador de pisos pino', qty: 15, day: 2, note: 'Reposición semanal' },
+    { name: 'Desodorante de pisos cherry', qty: 20, day: 1, note: 'Reposición semanal' },
+  ];
+
+  // Track running stock for each product
+  const runningStock: Record<number, number> = {};
+  for (const p of insertedProducts) {
+    runningStock[p.id] = p.stock;
+  }
+
+  for (const repo of reposiciones) {
+    const prod = prodMap[repo.name];
+    if (!prod) continue;
+    const prevStock = runningStock[prod.id];
+    const newStock = prevStock + repo.qty;
+    runningStock[prod.id] = newStock;
+
+    await db.insert(stockMovements).values({
+      productId: prod.id,
+      productName: repo.name,
+      type: 'reposicion',
+      quantity: repo.qty,
+      previousStock: prevStock,
+      newStock: newStock,
+      note: repo.note,
+      createdAt: daysAgoWithHour(repo.day, 9),
+    });
+
+    await db.update(products).set({
+      stock: newStock,
+      updatedAt: daysAgoWithHour(repo.day, 9),
+    }).where(eq(products.id, prod.id));
+
+    repoCount++;
+  }
+  console.log(`   ✅ ${repoCount} reposiciones de stock registradas`);
+
+  // ── 7. Ventas + Movimientos de stock por venta ─────────────────────────
+  console.log('🧾 Generando historial de ventas con movimientos de stock...');
 
   const paymentMethods = ['efectivo', 'tarjeta', 'transferencia'];
   let saleCount = 0;
+  let stockMoveCount = 0;
 
-  // Generar ~40 ventas distribuidas en los últimos 30 días
   for (let day = 30; day >= 0; day--) {
-    // Entre 0 y 3 ventas por día
     const salesPerDay = day === 0 ? 2 : Math.floor(Math.random() * 3) + (day % 3 === 0 ? 1 : 0);
 
     for (let s = 0; s < salesPerDay; s++) {
-      // Elegir 1 a 4 productos aleatorios
       const numItems = Math.floor(Math.random() * 3) + 1;
       const shuffled = [...insertedProducts]
-        .filter(p => p.active)
+        .filter(p => p.active && runningStock[p.id] > 0)
         .sort(() => Math.random() - 0.5)
         .slice(0, numItems);
 
+      if (shuffled.length === 0) continue;
+
       const items = shuffled.map(p => {
         const basePrice = (p.cost || 200) * 2.5;
-        const price = Math.round(basePrice / 50) * 50; // precio 1 litro
-        const quantity = Math.floor(Math.random() * 3) + 1;
+        const price = Math.round(basePrice / 50) * 50;
+        const maxQty = Math.min(3, Math.floor(runningStock[p.id] / 2));
+        const quantity = Math.max(1, Math.floor(Math.random() * maxQty) + 1);
         return {
           productId: p.id,
           productName: p.name,
           quantity,
           price,
-          size: 2, // 1 litro (quantity=2 en product_prices)
+          size: 2,
+          unit: 'unidad',
           total: price * quantity,
         };
       });
 
       const grandTotal = items.reduce((sum, i) => sum + i.total, 0);
-      const dateStr = daysAgo(day);
+      const saleHour = 8 + Math.floor(Math.random() * 12);
+      const dateStr = daysAgoWithHour(day, saleHour);
 
       const [sale] = await db.insert(sales).values({
         grandTotal,
@@ -286,13 +379,82 @@ async function seed() {
         items.map(i => ({ saleId: sale.id, ...i }))
       );
 
+      // Registrar movimientos de stock por cada item vendido
+      for (const item of items) {
+        const stockDecrement = item.quantity * item.size;
+        const prevStock = runningStock[item.productId];
+        const newStk = Math.max(0, prevStock - stockDecrement);
+        runningStock[item.productId] = newStk;
+
+        await db.insert(stockMovements).values({
+          productId: item.productId,
+          productName: item.productName,
+          type: 'venta',
+          quantity: -stockDecrement,
+          previousStock: prevStock,
+          newStock: newStk,
+          note: `Venta #${sale.id}`,
+          referenceId: sale.id,
+          createdAt: dateStr,
+        });
+
+        await db.update(products).set({
+          stock: newStk,
+          updatedAt: dateStr,
+        }).where(eq(products.id, item.productId));
+
+        stockMoveCount++;
+      }
+
       saleCount++;
     }
   }
   console.log(`   ✅ ${saleCount} ventas generadas`);
+  console.log(`   ✅ ${stockMoveCount} movimientos de stock por ventas registrados`);
 
-  // ── Fin ────────────────────────────────────────────────────────────────
+  // ── 8. Ajustes de stock (ejemplos) ─────────────────────────────────────
+  console.log('🔧 Registrando ajustes de inventario...');
+
+  const ajustes = [
+    { name: 'Limpiador de hornos', qty: -2, day: 7, note: 'Ajuste por rotura de envases' },
+    { name: 'Blanqueador óptico', qty: 3, day: 4, note: 'Ajuste: encontrados en depósito trasero' },
+  ];
+
+  for (const ajuste of ajustes) {
+    const prod = prodMap[ajuste.name];
+    if (!prod) continue;
+    const prevStock = runningStock[prod.id];
+    const newStk = Math.max(0, prevStock + ajuste.qty);
+    runningStock[prod.id] = newStk;
+
+    await db.insert(stockMovements).values({
+      productId: prod.id,
+      productName: ajuste.name,
+      type: 'ajuste',
+      quantity: ajuste.qty,
+      previousStock: prevStock,
+      newStock: newStk,
+      note: ajuste.note,
+      createdAt: daysAgoWithHour(ajuste.day, 14),
+    });
+
+    await db.update(products).set({
+      stock: newStk,
+      updatedAt: daysAgoWithHour(ajuste.day, 14),
+    }).where(eq(products.id, prod.id));
+  }
+  console.log(`   ✅ ${ajustes.length} ajustes de inventario registrados`);
+
+  // ── Resumen final ──────────────────────────────────────────────────────
+  const totalMovements = insertedProducts.filter(p => p.stock > 0).length + repoCount + stockMoveCount + ajustes.length;
   console.log('\n🎉 Seed completado exitosamente!');
+  console.log(`   📊 Resumen:`);
+  console.log(`      - ${insertedCategories.length} categorías`);
+  console.log(`      - ${insertedProducts.length} productos`);
+  console.log(`      - ${priceCount} precios`);
+  console.log(`      - ${comboData.length} combos`);
+  console.log(`      - ${saleCount} ventas`);
+  console.log(`      - ${totalMovements} movimientos de stock`);
   console.log('   Podés iniciar la app con: npm run dev');
   console.log('   Login con contraseña: 123\n');
 

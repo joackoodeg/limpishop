@@ -15,6 +15,7 @@ import {
 
 const navLinks = [
   { href: '/products', label: 'Productos' },
+  { href: '/stock', label: 'Stock' },
   { href: '/categories', label: 'Categorías' },
   { href: '/sales', label: 'Ventas' },
   { href: '/resumen', label: 'Resumen' },

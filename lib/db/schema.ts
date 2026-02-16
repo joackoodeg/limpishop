@@ -17,7 +17,8 @@ export const products = sqliteTable('products', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   cost: real('cost').default(0),
-  stock: integer('stock').notNull().default(0),
+  stock: real('stock').notNull().default(0),
+  unit: text('unit').notNull().default('unidad'),
   description: text('description').default(''),
   categoryId: integer('category_id').references(() => categories.id),
   categoryName: text('category_name'),
@@ -33,7 +34,7 @@ export const products = sqliteTable('products', {
 export const productPrices = sqliteTable('product_prices', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   productId: integer('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
-  quantity: integer('quantity').notNull(),
+  quantity: real('quantity').notNull(),
   price: real('price').notNull(),
 });
 
@@ -52,9 +53,10 @@ export const saleItems = sqliteTable('sale_items', {
   saleId: integer('sale_id').notNull().references(() => sales.id, { onDelete: 'cascade' }),
   productId: integer('product_id'),
   productName: text('product_name').notNull(),
-  quantity: integer('quantity').notNull(),
+  quantity: real('quantity').notNull(),
   price: real('price').notNull(),
   size: real('size'),
+  unit: text('unit').default('unidad'),
   total: real('total'),
 });
 
@@ -77,7 +79,7 @@ export const comboProducts = sqliteTable('combo_products', {
   comboId: integer('combo_id').notNull().references(() => combos.id, { onDelete: 'cascade' }),
   productId: integer('product_id'),
   productName: text('product_name').notNull(),
-  quantity: integer('quantity').notNull(),
+  quantity: real('quantity').notNull(),
   price: real('price').notNull(),
 });
 
@@ -94,4 +96,18 @@ export const storeConfig = sqliteTable('store_config', {
   taxId: text('tax_id').default(''), // RUC, CUIT, etc.
   createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`).notNull(),
+});
+
+// ── Stock Movements (historial de stock) ────────────────────────────────────
+export const stockMovements = sqliteTable('stock_movements', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  productId: integer('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  productName: text('product_name').notNull(),
+  type: text('type').notNull(), // 'inicial' | 'reposicion' | 'venta' | 'ajuste' | 'devolucion'
+  quantity: real('quantity').notNull(), // positivo = entrada, negativo = salida
+  previousStock: real('previous_stock').notNull(),
+  newStock: real('new_stock').notNull(),
+  note: text('note').default(''),
+  referenceId: integer('reference_id'), // nullable, vincula a sales.id cuando type='venta'|'devolucion'
+  createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
 });

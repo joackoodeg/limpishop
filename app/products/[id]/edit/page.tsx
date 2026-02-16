@@ -2,23 +2,34 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import PageHeader from '../../../components/PageHeader';
+import { UNIT_OPTIONS, getUnitLabel, getUnitShort, getStockStep } from '@/lib/units';
+import { ArrowRight, ArrowLeft, Package, DollarSign, Ruler, Scale, Droplet, Boxes } from 'lucide-react';
 
 export default function EditProductPage() {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  // Step 1: Basic data
   const [name, setName] = useState('');
-  const [prices, setPrices] = useState([{ quantity: 1, price: '' }]);
+  const [unit, setUnit] = useState('unidad');
   const [cost, setCost] = useState('');
   const [stock, setStock] = useState('');
   const [description, setDescription] = useState('');
   const [active, setActive] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [categoryId, setCategoryId] = useState<number | null>(null);
+
+  // Step 2: Prices
+  const [prices, setPrices] = useState([{ quantity: 1, price: '' }]);
+
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const { id } = params;
@@ -34,22 +45,41 @@ export default function EditProductPage() {
           setPrices(product.prices && product.prices.length > 0 ? product.prices : [{ quantity: 1, price: '' }]);
           setCost(product.cost ?? '');
           setStock(product.stock);
+          setUnit(product.unit || 'unidad');
           setDescription(product.description ?? '');
           setActive(product.active ?? true);
           setFeatured(product.featured ?? false);
           setCategoryId(product.categoryId ?? null);
         }
+        setLoading(false);
       }
       fetchProduct();
     }
   }, [id]);
 
+  function canAdvance() {
+    return name.trim() !== '' && cost !== '';
+  }
+
+  function goToStep2() {
+    if (!canAdvance()) {
+      toast.error('Completa nombre, costo y stock antes de continuar');
+      return;
+    }
+    setStep(2);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const validPrices = prices.filter(p => p.price !== '' && Number(p.price) > 0);
+    if (validPrices.length === 0) {
+      toast.error('Agrega al menos un precio');
+      return;
+    }
     await fetch(`/api/products/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, prices, cost, stock, description, active, featured, categoryId }),
+      body: JSON.stringify({ name, prices: validPrices, cost, description, active, featured, categoryId, unit }),
     });
     toast.success('Producto actualizado');
     router.push('/products');
@@ -69,70 +99,254 @@ export default function EditProductPage() {
     setPrices(prices.filter((_, i) => i !== index));
   }
 
+  const unitLabel = getUnitLabel(unit, 2);
+  const unitShort = getUnitShort(unit);
+
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="Editar Producto" actions={[{ label: 'Volver', href: '/products', variant: 'outline' }]} />
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground">Cargando producto…</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader title="Editar Producto" actions={[{ label: 'Volver', href: '/products', variant: 'outline' }]} />
 
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
+      {/* Step indicator */}
+      <div className="flex items-center gap-2 mb-6">
+        <button
+          type="button"
+          onClick={() => setStep(1)}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${step === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+        >
+          <Package className="h-4 w-4" />
+          1. Producto y Unidad
+        </button>
+        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${step === 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+          <DollarSign className="h-4 w-4" />
+          2. Precios por Cantidad
+        </div>
+      </div>
 
-            <div className="space-y-2">
-              <Label>Precios</Label>
-              {prices.map((p, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Cantidad"
-                    value={p.quantity}
-                    onChange={(e) => handlePriceChange(index, 'quantity', e.target.value)}
-                    className="w-1/3"
-                    required
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Precio"
-                    value={p.price}
-                    onChange={(e) => handlePriceChange(index, 'price', e.target.value)}
-                    className="w-1/3"
-                    required
-                  />
-                  {prices.length > 1 && (
-                    <Button type="button" variant="destructive" size="sm" onClick={() => removePriceField(index)}>
-                      ×
-                    </Button>
-                  )}
+      {/* ── Step 1: Basic data + Unit ────────────────────────────────── */}
+      {step === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ruler className="h-5 w-5" />
+              Datos del Producto
+            </CardTitle>
+            <CardDescription>
+              Modifica los datos básicos del producto y su unidad de medida.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre del producto</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Arroz, Leche, Detergente..." required />
+              </div>
+
+              {/* Unit selection - prominent */}
+              <div className="space-y-2">
+                <Label>Unidad de medida</Label>
+                <p className="text-xs text-muted-foreground">Selecciona cómo se mide y vende este producto</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {UNIT_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setUnit(opt.value)}
+                      className={`p-4 rounded-lg border-2 text-center transition-all ${
+                        unit === opt.value
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                          : 'border-muted hover:border-muted-foreground/30'
+                      }`}
+                    >
+                      <div className="mb-1 flex items-center justify-center">
+                        {opt.value === 'unidad' ? (
+                          <Package className="h-6 w-6" />
+                        ) : opt.value === 'kilo' ? (
+                          <Scale className="h-6 w-6" />
+                        ) : (
+                          <Droplet className="h-6 w-6" />
+                        )}
+                      </div>
+                      <div className="font-medium text-sm">{opt.label}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {opt.value === 'unidad' ? 'Se vende por pieza' : opt.value === 'kilo' ? 'Se vende por peso' : 'Se vende por volumen'}
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              ))}
-              <Button type="button" variant="outline" size="sm" onClick={addPriceField}>
-                + Añadir Precio
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cost">Costo Unitario</Label>
-                <Input id="cost" type="number" value={cost} onChange={(e) => setCost(e.target.value)} required />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cost">Costo unitario (por {getUnitLabel(unit, 1)})</Label>
+                  <Input id="cost" type="number" step="0.01" min="0" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Stock actual ({unitShort})</Label>
+                  <div className="flex items-center gap-2 h-9 px-3 rounded-md border bg-muted/50">
+                    <Boxes className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{stock} {unitShort}</span>
+                    <Link
+                      href={`/stock?product=${id}`}
+                      className="ml-auto text-xs text-primary hover:underline font-medium"
+                    >
+                      Gestionar stock →
+                    </Link>
+                  </div>
+                  <p className="text-xs text-muted-foreground">El stock se gestiona desde el panel de Stock</p>
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="stock">Stock</Label>
-                <Input id="stock" type="number" value={stock} onChange={(e) => setStock(e.target.value)} required />
+                <Label htmlFor="description">Descripción (opcional)</Label>
+                <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Detalles del producto..." />
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button type="button" onClick={goToStep2} disabled={!canAdvance()}>
+                  Continuar a Precios
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-            </div>
+      {/* ── Step 2: Pricing tiers ────────────────────────────────── */}
+      {step === 2 && (
+        <form onSubmit={handleSubmit}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Precios por Cantidad
+              </CardTitle>
+              <CardDescription>
+                Define los precios de venta para distintas cantidades de <strong>{unitLabel}</strong>.
+                {' '}Por ejemplo: 1 {getUnitLabel(unit, 1)} a $X, 5 {unitLabel} a $Y.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Summary of step 1 */}
+                <div className="bg-muted/50 rounded-lg p-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Producto:</span>{' '}
+                    <strong>{name}</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Unidad:</span>{' '}
+                    <strong>{UNIT_OPTIONS.find(o => o.value === unit)?.label}</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Costo:</span>{' '}
+                    <strong>${cost}</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Stock:</span>{' '}
+                    <strong>{stock} {unitShort}</strong>
+                  </div>
+                </div>
 
-            <Button type="submit">Actualizar</Button>
-          </form>
-        </CardContent>
-      </Card>
+                {/* Price tiers */}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs font-medium text-muted-foreground px-1">
+                    <span>Cantidad ({unitLabel})</span>
+                    <span>Precio de venta ($)</span>
+                    <span className="w-9"></span>
+                  </div>
+                  {prices.map((p, index) => (
+                    <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step={getStockStep(unit)}
+                          min="0.01"
+                          placeholder={`Ej: ${unit === 'unidad' ? '1' : '0.5'}`}
+                          value={p.quantity}
+                          onChange={(e) => handlePriceChange(index, 'quantity', e.target.value)}
+                          required
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                          {unitShort}
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">$</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={p.price}
+                          onChange={(e) => handlePriceChange(index, 'price', e.target.value)}
+                          className="pl-7"
+                          required
+                        />
+                      </div>
+                      {prices.length > 1 ? (
+                        <Button type="button" variant="destructive" size="icon" className="h-9 w-9" onClick={() => removePriceField(index)}>
+                          ×
+                        </Button>
+                      ) : (
+                        <div className="w-9" />
+                      )}
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={addPriceField}>
+                    + Añadir otro precio
+                  </Button>
+                </div>
+
+                {/* Margin preview */}
+                {prices.some(p => p.price && Number(p.price) > 0) && cost && (
+                  <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg p-3 text-sm space-y-1">
+                    <p className="font-medium text-green-700 dark:text-green-400">Vista previa de márgenes</p>
+                    {prices
+                      .filter(p => p.price && Number(p.price) > 0)
+                      .map((p, i) => {
+                        const totalCost = Number(cost) * Number(p.quantity);
+                        const margin = Number(p.price) - totalCost;
+                        const marginPct = totalCost > 0 ? ((margin / totalCost) * 100).toFixed(1) : '—';
+                        return (
+                          <p key={i} className="text-green-600 dark:text-green-300">
+                            {p.quantity} {getUnitLabel(unit, Number(p.quantity))} → ${p.price}
+                            {' '}(costo: ${totalCost.toFixed(2)}, margen: {margin >= 0 ? '+' : ''}{margin.toFixed(2)} / {marginPct}%)
+                          </p>
+                        );
+                      })
+                    }
+                  </div>
+                )}
+
+                <div className="flex justify-between pt-2">
+                  <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Volver
+                  </Button>
+                  <Button type="submit">
+                    Actualizar Producto
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </form>
+      )}
     </div>
   );
 }

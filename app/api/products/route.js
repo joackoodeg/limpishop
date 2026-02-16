@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productPrices, categories } from '@/lib/db/schema';
+import { products, productPrices, categories, stockMovements } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET() {
@@ -32,12 +32,13 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { name, prices, cost, stock, description, categoryId } = await request.json();
+    const { name, prices, cost, stock, description, categoryId, unit } = await request.json();
 
     const productData = {
       name,
       cost: Number(cost),
-      stock: Number(stock),
+      stock: parseFloat(stock) || 0,
+      unit: unit || 'unidad',
       description,
       active: true,
       featured: false,
@@ -54,12 +55,26 @@ export async function POST(request) {
 
     const [inserted] = await db.insert(products).values(productData).returning();
 
+    // Register initial stock movement
+    const initialStock = parseFloat(stock) || 0;
+    if (initialStock > 0) {
+      await db.insert(stockMovements).values({
+        productId: inserted.id,
+        productName: inserted.name,
+        type: 'inicial',
+        quantity: initialStock,
+        previousStock: 0,
+        newStock: initialStock,
+        note: 'Stock inicial al crear el producto',
+      });
+    }
+
     // Insert prices
     if (prices && Array.isArray(prices) && prices.length > 0) {
       await db.insert(productPrices).values(
         prices.map(p => ({
           productId: inserted.id,
-          quantity: Number(p.quantity),
+          quantity: parseFloat(p.quantity) || 0,
           price: Number(p.price),
         }))
       );

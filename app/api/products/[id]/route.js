@@ -38,7 +38,7 @@ export async function PUT(request, context) {
   try {
     const { id } = await context.params;
     const numId = Number(id);
-    const { name, prices, cost, stock, description, categoryId, active, featured } = await request.json();
+    const { name, prices, cost, description, categoryId, active, featured, unit } = await request.json();
 
     if (isNaN(numId)) {
       return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
@@ -47,7 +47,7 @@ export async function PUT(request, context) {
     const updateData = {
       name,
       cost: Number(cost),
-      stock: Number(stock),
+      unit: unit || 'unidad',
       description,
       active: active !== undefined ? active : true,
       featured: featured !== undefined ? featured : false,
@@ -78,7 +78,7 @@ export async function PUT(request, context) {
       await db.insert(productPrices).values(
         prices.map(p => ({
           productId: numId,
-          quantity: Number(p.quantity),
+          quantity: parseFloat(p.quantity) || 0,
           price: Number(p.price),
         }))
       );
