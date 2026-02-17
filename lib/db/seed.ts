@@ -428,13 +428,13 @@ async function seed() {
       // Link sale to cash register if one exists for this day
       const registerId = dayToRegisterId[day] ?? undefined;
 
-      const saleValues: Record<string, unknown> = {
+      const saleValues: typeof sales.$inferInsert = {
         grandTotal,
         paymentMethod: chosenPayment,
         date: dateStr,
         createdAt: dateStr,
+        ...(registerId ? { cashRegisterId: registerId } : {}),
       };
-      if (registerId) saleValues.cashRegisterId = registerId;
 
       const [sale] = await db.insert(sales).values(saleValues).returning();
 
