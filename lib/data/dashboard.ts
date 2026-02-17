@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { products, sales, saleItems } from '@/lib/db/schema';
-import { gte, sql } from 'drizzle-orm';
+import { gte, sql, eq } from 'drizzle-orm';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -47,7 +47,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       totalUnits: sql<number>`COALESCE(SUM(${saleItems.quantity} * ${saleItems.size}), 0)`,
     })
     .from(saleItems)
-    .innerJoin(sales, sql`${saleItems.saleId} = ${sales.id}`)
+    .innerJoin(sales, eq(saleItems.saleId, sales.id))
     .where(gte(sales.date, todayStart));
 
     return {

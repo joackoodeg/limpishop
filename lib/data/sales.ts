@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { sales, saleItems } from '@/lib/db/schema';
-import { desc, and, gte, lte } from 'drizzle-orm';
+import { desc, and, gte, lte, sql } from 'drizzle-orm';
 
 export interface SaleItem {
   productId: number;
@@ -47,9 +47,10 @@ export async function getSales(filters?: SalesFilters): Promise<Sale[]> {
       ? await salesQuery.where(and(...filterConditions))
       : await salesQuery;
 
-    // Fetch all sale items in one query
+    // Fetch sale items only for the retrieved sales (optimized)
     const allItems = allSales.length > 0
       ? await db.select().from(saleItems)
+          .where(sql`${saleItems.saleId} IN (${sql.join(allSales.map(s => sql`${s.id}`), sql`, `)})`)
       : [];
 
     // Group items by sale ID
