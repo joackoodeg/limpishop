@@ -158,6 +158,8 @@ export default function NewSalePage() {
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <div>
       <PageHeader title="Nueva Venta" actions={[{ label: 'Volver', href: '/sales', variant: 'outline' }]} />
@@ -168,7 +170,7 @@ export default function NewSalePage() {
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="productos">Productos</TabsTrigger>
             <TabsTrigger value="carrito">
-              Carrito {cart.length > 0 && `(${cart.length})`}
+              Carrito {totalCartItems > 0 && `(${totalCartItems})`}
             </TabsTrigger>
           </TabsList>
           
