@@ -64,7 +64,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { openingAmount = 0, note = '' } = body;
+    const { note = '' } = body;
+
+    // Get the most recent closed cash register to use its closing amount as opening amount
+    const [previousRegister] = await db
+      .select()
+      .from(cashRegisters)
+      .where(eq(cashRegisters.status, 'closed'))
+      .orderBy(desc(cashRegisters.closedAt))
+      .limit(1);
+
+    // Use previous register's closing amount if available, otherwise default to 0
+    const openingAmount = previousRegister?.closingAmount ?? 0;
 
     const [newRegister] = await db
       .insert(cashRegisters)
