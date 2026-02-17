@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { sales, saleItems, products, stockMovements } from '@/lib/db/schema';
+import { sales, saleItems, products, stockMovements, cashRegisters, cashMovements } from '@/lib/db/schema';
 import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
 
 // Cache sales list for 30 seconds
@@ -60,7 +60,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { items, paymentMethod, grandTotal } = await request.json();
+    const { items, paymentMethod, grandTotal, employeeId, employeeName } = await request.json();
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
@@ -85,12 +85,16 @@ export async function POST(request) {
       ? grandTotal
       : items.reduce((total, item) => total + item.price * item.quantity, 0);
 
-    // 3. Create a single sale record
-    const [newSale] = await db.insert(sales).values({
+    // 3. Create a single sale record (with optional employee)
+    const saleValues = {
       grandTotal: finalTotal,
       paymentMethod,
       date: new Date().toISOString(),
-    }).returning();
+    };
+    if (employeeId) saleValues.employeeId = Number(employeeId);
+    if (employeeName) saleValues.employeeName = employeeName;
+
+    const [newSale] = await db.insert(sales).values(saleValues).returning();
 
     // 4. Insert sale items
     const saleItemsData = items.map(item => ({
@@ -126,6 +130,28 @@ export async function POST(request) {
         note: `Venta #${newSale.id}`,
         referenceId: newSale.id,
       });
+    }
+
+    // 6. If payment is 'efectivo' and there's an open cash register, record cash movement
+    if (paymentMethod === 'efectivo') {
+      try {
+        const openRegisters = await db.select()
+          .from(cashRegisters)
+          .where(eq(cashRegisters.status, 'open'));
+        if (openRegisters.length > 0) {
+          await db.insert(cashMovements).values({
+            cashRegisterId: openRegisters[0].id,
+            type: 'venta',
+            amount: finalTotal,
+            description: `Venta #${newSale.id}`,
+            category: 'venta',
+            referenceId: newSale.id,
+          });
+        }
+      } catch (cashErr) {
+        // Don't fail the sale if cash register integration fails
+        console.error('Cash register integration error:', cashErr);
+      }
     }
 
     // Fetch inserted items back

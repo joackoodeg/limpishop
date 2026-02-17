@@ -43,6 +43,8 @@ export const sales = sqliteTable('sales', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   grandTotal: real('grand_total').notNull(),
   paymentMethod: text('payment_method').notNull(), // 'efectivo' | 'tarjeta' | 'transferencia'
+  employeeId: integer('employee_id'),
+  employeeName: text('employee_name'),
   date: text('date').default(sql`(datetime('now'))`).notNull(),
   createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
 });
@@ -94,6 +96,12 @@ export const storeConfig = sqliteTable('store_config', {
   logoUrl: text('logo_url'),
   logoPublicId: text('logo_public_id'),
   taxId: text('tax_id').default(''), // RUC, CUIT, etc.
+  // Module toggles (JSON serialized)
+  enabledModules: text('enabled_modules').default('{"cajaDiaria":false,"empleados":false}'),
+  // Allowed built-in units (JSON array)
+  allowedUnits: text('allowed_units').default('["unidad","kilo","litro"]'),
+  // Custom units defined by the business (JSON array of objects)
+  customUnits: text('custom_units').default('[]'),
   createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`).notNull(),
 });
@@ -110,4 +118,41 @@ export const stockMovements = sqliteTable('stock_movements', {
   note: text('note').default(''),
   referenceId: integer('reference_id'), // nullable, vincula a sales.id cuando type='venta'|'devolucion'
   createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
+});
+
+// ── Cash Register (Caja Diaria) ─────────────────────────────────────────────
+export const cashRegisters = sqliteTable('cash_registers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  openedAt: text('opened_at').default(sql`(datetime('now'))`).notNull(),
+  closedAt: text('closed_at'),
+  openingAmount: real('opening_amount').notNull().default(0),
+  closingAmount: real('closing_amount'),
+  expectedAmount: real('expected_amount'),
+  difference: real('difference'),
+  status: text('status').notNull().default('open'), // 'open' | 'closed'
+  note: text('note').default(''),
+  createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
+});
+
+export const cashMovements = sqliteTable('cash_movements', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  cashRegisterId: integer('cash_register_id').notNull().references(() => cashRegisters.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'ingreso' | 'egreso' | 'venta'
+  amount: real('amount').notNull(),
+  description: text('description').default(''),
+  category: text('category').notNull().default('otro'), // 'venta' | 'pago_proveedor' | 'retiro' | 'deposito' | 'otro'
+  referenceId: integer('reference_id'), // nullable, links to sales.id when type='venta'
+  createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
+});
+
+// ── Employees (Empleados) ───────────────────────────────────────────────────
+export const employees = sqliteTable('employees', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  role: text('role').notNull().default('vendedor'), // 'vendedor' | 'admin' | 'cajero'
+  phone: text('phone').default(''),
+  email: text('email').default(''),
+  active: integer('active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`).notNull(),
 });

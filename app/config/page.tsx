@@ -10,25 +10,22 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import ImageUpload from '@/app/components/ImageUpload';
-import { Loader2, Save, Building2 } from 'lucide-react';
-
-interface StoreConfig {
-  id: number;
-  storeName: string;
-  phone: string;
-  email: string;
-  address: string;
-  city: string;
-  logoUrl: string | null;
-  logoPublicId: string | null;
-  taxId: string;
-}
+import { useStoreConfig } from '@/app/components/StoreConfigProvider';
+import { Loader2, Save, Building2, Plus, Trash2, Boxes, Users, DollarSign } from 'lucide-react';
+import type { StoreConfig, EnabledModules } from '@/lib/types/config';
+import type { CustomUnit } from '@/lib/units';
 
 export default function ConfigPage() {
   const router = useRouter();
+  const { refresh: refreshGlobalConfig } = useStoreConfig();
   const [config, setConfig] = useState<StoreConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // New custom unit form state
+  const [newUnit, setNewUnit] = useState<Omit<CustomUnit, 'id'>>({
+    name: '', short: '', step: 1, lowStockThreshold: 5,
+  });
 
   // Cargar configuración actual
   useEffect(() => {
@@ -65,6 +62,7 @@ export default function ConfigPage() {
 
       const updatedConfig = await response.json();
       setConfig(updatedConfig);
+      await refreshGlobalConfig();
       toast.success('Configuración guardada exitosamente');
     } catch (error) {
       console.error('Error saving config:', error);
@@ -83,6 +81,60 @@ export default function ConfigPage() {
     toast.success('Logo actualizado');
   };
 
+  // Module toggle helper
+  const toggleModule = (mod: keyof EnabledModules) => {
+    if (!config) return;
+    setConfig({
+      ...config,
+      enabledModules: {
+        ...config.enabledModules,
+        [mod]: !config.enabledModules[mod],
+      },
+    });
+  };
+
+  // Built-in unit toggle helper
+  const toggleBuiltinUnit = (unit: string) => {
+    if (!config) return;
+    const units = config.allowedUnits.includes(unit)
+      ? config.allowedUnits.filter(u => u !== unit)
+      : [...config.allowedUnits, unit];
+    // Don't allow empty — must have at least 1 unit
+    if (units.length === 0 && config.customUnits.length === 0) {
+      toast.error('Debe haber al menos una unidad habilitada');
+      return;
+    }
+    setConfig({ ...config, allowedUnits: units });
+  };
+
+  // Add custom unit
+  const addCustomUnit = () => {
+    if (!config) return;
+    if (!newUnit.name.trim() || !newUnit.short.trim()) {
+      toast.error('El nombre y la abreviatura son obligatorios');
+      return;
+    }
+    const id = newUnit.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    if (config.customUnits.some(cu => cu.id === id) || ['unidad', 'kilo', 'litro'].includes(id)) {
+      toast.error('Ya existe una unidad con ese nombre');
+      return;
+    }
+    setConfig({
+      ...config,
+      customUnits: [...config.customUnits, { ...newUnit, id }],
+    });
+    setNewUnit({ name: '', short: '', step: 1, lowStockThreshold: 5 });
+  };
+
+  // Remove custom unit
+  const removeCustomUnit = (id: string) => {
+    if (!config) return;
+    setConfig({
+      ...config,
+      customUnits: config.customUnits.filter(cu => cu.id !== id),
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -99,22 +151,34 @@ export default function ConfigPage() {
     );
   }
 
+  const BUILTIN_UNIT_DEFS = [
+    { value: 'unidad', label: 'Unidad (uds)' },
+    { value: 'kilo', label: 'Kilogramo (kg)' },
+    { value: 'litro', label: 'Litro (L)' },
+  ];
+
+  const MODULE_DEFS: { key: keyof EnabledModules; label: string; description: string; icon: typeof DollarSign }[] = [
+    { key: 'cajaDiaria', label: 'Caja Diaria', description: 'Apertura/cierre de caja, ingresos y egresos manuales', icon: DollarSign },
+    { key: 'empleados', label: 'Empleados', description: 'Gestión de empleados y asignación a ventas', icon: Users },
+  ];
+
   return (
     <div className="container mx-auto py-6 px-4">
       <PageHeader
         title="Configuración del Local"
-        description="Gestiona la información de tu negocio"
+        description="Gestiona la información de tu negocio, módulos y unidades"
       />
 
-      <Card className="max-w-3xl">
-        <CardHeader>
-          <CardTitle>Información del Negocio</CardTitle>
-          <CardDescription>
-            Esta información se mostrará en reportes, PDFs y documentos generados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
+        {/* ── Información del negocio ──────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Información del Negocio</CardTitle>
+            <CardDescription>
+              Esta información se mostrará en reportes, PDFs y documentos generados
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
             {/* Logo del negocio */}
             <div className="space-y-2">
               <Label>Logo del Negocio</Label>
@@ -195,38 +259,189 @@ export default function ConfigPage() {
                 placeholder="Ej: Asunción"
               />
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Botones */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="submit"
-                disabled={saving}
-                className="flex-1"
+        {/* ── Módulos activables ──────────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Boxes className="h-5 w-5" />
+              Módulos
+            </CardTitle>
+            <CardDescription>
+              Activa o desactiva funcionalidades adicionales según las necesidades de tu negocio
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {MODULE_DEFS.map((mod) => (
+              <label
+                key={mod.key}
+                className="flex items-center justify-between p-4 rounded-lg border cursor-pointer hover:bg-accent/50 transition-colors"
               >
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Guardar Cambios
-                  </>
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                disabled={saving}
-              >
-                Cancelar
+                <div className="flex items-center gap-3">
+                  <mod.icon className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{mod.label}</p>
+                    <p className="text-sm text-muted-foreground">{mod.description}</p>
+                  </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={config.enabledModules[mod.key]}
+                    onChange={() => toggleModule(mod.key)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-muted rounded-full peer-checked:bg-primary transition-colors" />
+                  <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-5" />
+                </div>
+              </label>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* ── Unidades de medida ──────────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Unidades de Medida</CardTitle>
+            <CardDescription>
+              Configura qué unidades están disponibles para tus productos. Puedes deshabilitar las predefinidas y crear las tuyas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Built-in units */}
+            <div>
+              <Label className="text-sm font-medium mb-3 block">Unidades predefinidas</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {BUILTIN_UNIT_DEFS.map((u) => (
+                  <label
+                    key={u.value}
+                    className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-accent/50 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={config.allowedUnits.includes(u.value)}
+                      onChange={() => toggleBuiltinUnit(u.value)}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <span className="text-sm">{u.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom units list */}
+            {config.customUnits.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium mb-3 block">Unidades personalizadas</Label>
+                <div className="space-y-2">
+                  {config.customUnits.map((cu) => (
+                    <div key={cu.id} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="flex items-center gap-4">
+                        <span className="font-medium">{cu.name}</span>
+                        <span className="text-sm text-muted-foreground">({cu.short})</span>
+                        <span className="text-xs text-muted-foreground">
+                          step: {cu.step} | stock bajo: {cu.lowStockThreshold}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeCustomUnit(cu.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add custom unit form */}
+            <div className="border rounded-lg p-4 space-y-4">
+              <Label className="text-sm font-medium">Agregar unidad personalizada</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <Label htmlFor="cu-name" className="text-xs text-muted-foreground">Nombre *</Label>
+                  <Input
+                    id="cu-name"
+                    value={newUnit.name}
+                    onChange={(e) => setNewUnit({ ...newUnit, name: e.target.value })}
+                    placeholder="Ej: Docena"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cu-short" className="text-xs text-muted-foreground">Abreviatura *</Label>
+                  <Input
+                    id="cu-short"
+                    value={newUnit.short}
+                    onChange={(e) => setNewUnit({ ...newUnit, short: e.target.value })}
+                    placeholder="Ej: doc"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cu-step" className="text-xs text-muted-foreground">Step</Label>
+                  <Input
+                    id="cu-step"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={newUnit.step}
+                    onChange={(e) => setNewUnit({ ...newUnit, step: parseFloat(e.target.value) || 1 })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cu-threshold" className="text-xs text-muted-foreground">Stock bajo</Label>
+                  <Input
+                    id="cu-threshold"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={newUnit.lowStockThreshold}
+                    onChange={(e) => setNewUnit({ ...newUnit, lowStockThreshold: parseInt(e.target.value) || 5 })}
+                  />
+                </div>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addCustomUnit}>
+                <Plus className="h-4 w-4 mr-1" />
+                Agregar Unidad
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* ── Botones de acción ───────────────────────────────────── */}
+        <div className="flex gap-3 pt-2">
+          <Button
+            type="submit"
+            disabled={saving}
+            className="flex-1"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Guardar Cambios
+              </>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={saving}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

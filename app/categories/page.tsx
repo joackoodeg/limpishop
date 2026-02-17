@@ -142,7 +142,7 @@ export default function CategoriesPage() {
                   ? setEditingCategory({ ...editingCategory, name: e.target.value })
                   : setNewCategory({ ...newCategory, name: e.target.value })
                 }
-                placeholder="Ej: Frutas, Lácteos, Limpieza..."
+                placeholder="Ej: Frutas, Lácteos, Electrónica..."
                 required
               />
             </div>

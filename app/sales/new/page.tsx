@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { getUnitLabel, getUnitShort, formatStock } from '@/lib/units';
+import { useStoreConfig } from '@/app/components/StoreConfigProvider';
 
 interface Product {
   id: number;
@@ -39,10 +40,20 @@ export default function NewSalePage() {
   const [isEditingTotal, setIsEditingTotal] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: number }>({});
   const [isProcessing, setIsProcessing] = useState(false);
+  const [employeesList, setEmployeesList] = useState<{ id: number; name: string; role: string }[]>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<number | null>(null);
   const router = useRouter();
+  const { isModuleEnabled } = useStoreConfig();
 
   useEffect(() => {
     fetchProducts();
+    // Fetch employees if module enabled
+    if (isModuleEnabled('empleados')) {
+      fetch('/api/employees/active')
+        .then(r => r.ok ? r.json() : [])
+        .then(data => setEmployeesList(Array.isArray(data) ? data : []))
+        .catch(() => {});
+    }
   }, []);
 
   async function fetchProducts() {
@@ -140,7 +151,13 @@ export default function NewSalePage() {
       const res = await fetch('/api/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cart, paymentMethod, grandTotal: getFinalTotal() }),
+        body: JSON.stringify({
+          items: cart,
+          paymentMethod,
+          grandTotal: getFinalTotal(),
+          employeeId: selectedEmployee || undefined,
+          employeeName: selectedEmployee ? employeesList.find(e => e.id === selectedEmployee)?.name : undefined,
+        }),
       });
       if (res.ok) {
         toast.success('Venta realizada con éxito');
@@ -330,6 +347,22 @@ export default function NewSalePage() {
                         </select>
                       </div>
 
+                      {isModuleEnabled('empleados') && employeesList.length > 0 && (
+                        <div>
+                          <Label className="text-sm">Vendedor:</Label>
+                          <select
+                            value={selectedEmployee ?? ''}
+                            onChange={(e) => setSelectedEmployee(e.target.value ? Number(e.target.value) : null)}
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mt-1"
+                          >
+                            <option value="">Sin asignar</option>
+                            {employeesList.map((emp) => (
+                              <option key={emp.id} value={emp.id}>{emp.name}{emp.role ? ` (${emp.role})` : ''}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
                       <Button className="w-full" size="lg" onClick={handleCheckout} disabled={isProcessing}>
                         {isProcessing ? (
                           <>
@@ -503,6 +536,22 @@ export default function NewSalePage() {
                         <option value="transferencia">Transferencia</option>
                       </select>
                     </div>
+
+                    {isModuleEnabled('empleados') && employeesList.length > 0 && (
+                      <div>
+                        <Label className="text-sm">Vendedor:</Label>
+                        <select
+                          value={selectedEmployee ?? ''}
+                          onChange={(e) => setSelectedEmployee(e.target.value ? Number(e.target.value) : null)}
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mt-1"
+                        >
+                          <option value="">Sin asignar</option>
+                          {employeesList.map((emp) => (
+                            <option key={emp.id} value={emp.id}>{emp.name}{emp.role ? ` (${emp.role})` : ''}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     <Button className="w-full" size="lg" onClick={handleCheckout} disabled={isProcessing}>
                       {isProcessing ? (

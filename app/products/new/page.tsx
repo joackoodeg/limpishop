@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import PageHeader from '../../components/PageHeader';
-import { UNIT_OPTIONS, getUnitLabel, getUnitShort, getStockStep } from '@/lib/units';
-import { ArrowRight, ArrowLeft, Loader2, Package, DollarSign, Ruler, Scale, Droplet } from 'lucide-react';
+import { getAvailableUnitOptions, getUnitLabel, getUnitShort, getStockStep } from '@/lib/units';
+import { useStoreConfig } from '@/app/components/StoreConfigProvider';
+import { ArrowRight, ArrowLeft, Loader2, Package, DollarSign, Ruler, Scale, Droplet, Tag } from 'lucide-react';
 
 export default function NewProductPage() {
   const [step, setStep] = useState(1);
@@ -28,6 +29,8 @@ export default function NewProductPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const router = useRouter();
+  const { allowedUnits, customUnits } = useStoreConfig();
+  const unitOptions = getAvailableUnitOptions(allowedUnits, customUnits);
 
   function canAdvance() {
     return name.trim() !== '' && cost !== '' && stock !== '';
@@ -125,33 +128,27 @@ export default function NewProductPage() {
               <div className="space-y-2">
                 <Label>Unidad de medida</Label>
                 <p className="text-xs text-muted-foreground">Selecciona cómo se mide y vende este producto</p>
-                <div className="grid grid-cols-3 gap-3">
-                  {UNIT_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setUnit(opt.value)}
-                      className={`p-4 rounded-lg border-2 text-center transition-all ${
-                        unit === opt.value
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                          : 'border-muted hover:border-muted-foreground/30'
-                      }`}
-                    >
-                      <div className="mb-1 flex items-center justify-center">
-                        {opt.value === 'unidad' ? (
-                          <Package className="h-6 w-6" />
-                        ) : opt.value === 'kilo' ? (
-                          <Scale className="h-6 w-6" />
-                        ) : (
-                          <Droplet className="h-6 w-6" />
-                        )}
-                      </div>
-                      <div className="font-medium text-sm">{opt.label}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {opt.value === 'unidad' ? 'Se vende por pieza' : opt.value === 'kilo' ? 'Se vende por peso' : 'Se vende por volumen'}
-                      </div>
-                    </button>
-                  ))}
+                <div className={`grid gap-3 ${unitOptions.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'}`}>
+                  {unitOptions.map(opt => {
+                    const Icon = opt.value === 'unidad' ? Package : opt.value === 'kilo' ? Scale : opt.value === 'litro' ? Droplet : Tag;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setUnit(opt.value)}
+                        className={`p-4 rounded-lg border-2 text-center transition-all ${
+                          unit === opt.value
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                            : 'border-muted hover:border-muted-foreground/30'
+                        }`}
+                      >
+                        <div className="mb-1 flex items-center justify-center">
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        <div className="font-medium text-sm">{opt.label}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -206,7 +203,7 @@ export default function NewProductPage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Unidad:</span>{' '}
-                    <strong>{UNIT_OPTIONS.find(o => o.value === unit)?.label}</strong>
+                    <strong>{unitOptions.find(o => o.value === unit)?.label}</strong>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Costo:</span>{' '}

@@ -99,7 +99,7 @@ export default function CombosPage() {
     const margin = 20;
 
     // Obtener configuración del local
-    let storeConfig = { storeName: 'El Limpito', phone: '342-486-9674', address: '', logoUrl: '' };
+    let storeConfig = { storeName: 'Mi Negocio', phone: '', address: '', logoUrl: '' };
     try {
       const configResponse = await fetch('/api/config');
       if (configResponse.ok) {

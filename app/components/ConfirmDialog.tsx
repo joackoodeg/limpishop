@@ -17,11 +17,14 @@ import { ReactNode } from 'react';
 interface ConfirmDialogProps {
   title?: string;
   description: string;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'default' | 'destructive';
-  children: ReactNode;
+  children?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  isLoading?: boolean;
 }
 
 export default function ConfirmDialog({
@@ -32,22 +35,26 @@ export default function ConfirmDialog({
   cancelLabel = 'Cancelar',
   variant = 'destructive',
   children,
+  open,
+  onOpenChange,
+  isLoading = false,
 }: ConfirmDialogProps) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      {children && <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
+            disabled={isLoading}
             className={variant === 'destructive' ? 'bg-destructive text-white hover:bg-destructive/90' : ''}
           >
-            {confirmLabel}
+            {isLoading ? 'Procesando...' : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

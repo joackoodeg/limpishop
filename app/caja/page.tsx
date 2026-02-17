@@ -1,0 +1,554 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { toast } from 'sonner';
+import { useStoreConfig } from '@/app/components/StoreConfigProvider';
+import PageHeader from '@/app/components/PageHeader';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Loader2,
+  DollarSign,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Lock,
+  Unlock,
+  History,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  Equal,
+  AlertTriangle,
+} from 'lucide-react';
+
+interface CashRegister {
+  id: number;
+  openedAt: string;
+  closedAt: string | null;
+  openingAmount: number;
+  closingAmount: number | null;
+  expectedAmount: number | null;
+  difference: number | null;
+  status: 'open' | 'closed';
+  note: string;
+}
+
+interface CashMovement {
+  id: number;
+  cashRegisterId: number;
+  type: 'ingreso' | 'egreso' | 'venta';
+  amount: number;
+  description: string;
+  category: string;
+  referenceId: number | null;
+  createdAt: string;
+}
+
+interface CashRegisterDetail extends CashRegister {
+  movements: CashMovement[];
+  totalIngresos: number;
+  totalEgresos: number;
+  calculatedExpected: number;
+}
+
+const MOVEMENT_CATEGORIES = [
+  { value: 'pago_proveedor', label: 'Pago a proveedor' },
+  { value: 'retiro', label: 'Retiro de efectivo' },
+  { value: 'deposito', label: 'Depósito' },
+  { value: 'otro', label: 'Otro' },
+];
+
+export default function CajaPage() {
+  const router = useRouter();
+  const { isModuleEnabled, loading: configLoading } = useStoreConfig();
+
+  const [loading, setLoading] = useState(true);
+  const [openRegister, setOpenRegister] = useState<CashRegisterDetail | null>(null);
+  const [history, setHistory] = useState<CashRegister[]>([]);
+
+  // Open caja form
+  const [openingAmount, setOpeningAmount] = useState('');
+  const [openNote, setOpenNote] = useState('');
+  const [isOpening, setIsOpening] = useState(false);
+
+  // Close caja form
+  const [closingAmount, setClosingAmount] = useState('');
+  const [closeNote, setCloseNote] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+
+  // New movement form
+  const [movType, setMovType] = useState<'ingreso' | 'egreso'>('ingreso');
+  const [movAmount, setMovAmount] = useState('');
+  const [movDescription, setMovDescription] = useState('');
+  const [movCategory, setMovCategory] = useState('otro');
+  const [isAddingMov, setIsAddingMov] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      // Check for open register
+      const openRes = await fetch('/api/cash-register?status=open');
+      const openData = await openRes.json();
+
+      if (Array.isArray(openData) && openData.length > 0) {
+        // Fetch detail
+        const detailRes = await fetch(`/api/cash-register/${openData[0].id}`);
+        const detail = await detailRes.json();
+        setOpenRegister(detail);
+      } else {
+        setOpenRegister(null);
+      }
+
+      // Fetch history (closed)
+      const histRes = await fetch('/api/cash-register?status=closed');
+      const histData = await histRes.json();
+      setHistory(Array.isArray(histData) ? histData : []);
+    } catch (error) {
+      console.error('Error fetching caja data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!configLoading && isModuleEnabled('cajaDiaria')) {
+      fetchData();
+    } else if (!configLoading) {
+      setLoading(false);
+    }
+  }, [configLoading, fetchData, isModuleEnabled]);
+
+  // Redirect if module disabled
+  if (!configLoading && !isModuleEnabled('cajaDiaria')) {
+    return (
+      <div className="container mx-auto py-6 px-4">
+        <PageHeader title="Caja Diaria" description="Módulo no habilitado" />
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <AlertTriangle className="h-12 w-12 mx-auto text-amber-500 mb-4" />
+            <p className="text-muted-foreground mb-4">
+              El módulo de Caja Diaria no está habilitado. Activalo desde la configuración.
+            </p>
+            <Button asChild>
+              <Link href="/config">Ir a Configuración</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const handleOpenCaja = async () => {
+    if (!openingAmount) {
+      toast.error('Ingresá el monto inicial');
+      return;
+    }
+    setIsOpening(true);
+    try {
+      const res = await fetch('/api/cash-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ openingAmount: Number(openingAmount), note: openNote }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+      toast.success('Caja abierta');
+      setOpeningAmount('');
+      setOpenNote('');
+      await fetchData();
+    } catch (error: any) {
+      toast.error(error.message || 'Error al abrir caja');
+    } finally {
+      setIsOpening(false);
+    }
+  };
+
+  const handleCloseCaja = async () => {
+    if (!closingAmount || !openRegister) {
+      toast.error('Ingresá el monto de cierre');
+      return;
+    }
+    setIsClosing(true);
+    try {
+      const res = await fetch(`/api/cash-register/${openRegister.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ closingAmount: Number(closingAmount), note: closeNote }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+      toast.success('Caja cerrada');
+      setClosingAmount('');
+      setCloseNote('');
+      await fetchData();
+    } catch (error: any) {
+      toast.error(error.message || 'Error al cerrar caja');
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
+  const handleAddMovement = async () => {
+    if (!movAmount || !openRegister) {
+      toast.error('Ingresá un monto');
+      return;
+    }
+    setIsAddingMov(true);
+    try {
+      const res = await fetch(`/api/cash-register/${openRegister.id}/movements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: movType,
+          amount: Number(movAmount),
+          description: movDescription,
+          category: movCategory,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+      toast.success(`${movType === 'ingreso' ? 'Ingreso' : 'Egreso'} registrado`);
+      setMovAmount('');
+      setMovDescription('');
+      setMovCategory('otro');
+      await fetchData();
+    } catch (error: any) {
+      toast.error(error.message || 'Error al registrar movimiento');
+    } finally {
+      setIsAddingMov(false);
+    }
+  };
+
+  const fmt = (n: number) =>
+    n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 });
+
+  const fmtDate = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  if (loading || configLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-6 px-4">
+      <PageHeader
+        title="Caja Diaria"
+        description={openRegister ? 'Caja abierta — registra movimientos o cerrala' : 'No hay caja abierta'}
+      />
+
+      {/* ── No open register: Show Open form ─────────────────────── */}
+      {!openRegister && (
+        <Card className="max-w-lg mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Unlock className="h-5 w-5" /> Abrir Caja
+            </CardTitle>
+            <CardDescription>Ingresá el monto inicial para comenzar la jornada</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="openingAmount">Monto inicial ($)</Label>
+              <Input
+                id="openingAmount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={openingAmount}
+                onChange={(e) => setOpeningAmount(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="openNote">Nota (opcional)</Label>
+              <Textarea
+                id="openNote"
+                value={openNote}
+                onChange={(e) => setOpenNote(e.target.value)}
+                placeholder="Detalles de apertura..."
+                rows={2}
+              />
+            </div>
+            <Button onClick={handleOpenCaja} disabled={isOpening} className="w-full">
+              {isOpening ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
+              Abrir Caja
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Open register: Show summary + movements ──────────────── */}
+      {openRegister && (
+        <div className="space-y-6">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <p className="text-xs text-muted-foreground mb-1">Monto Inicial</p>
+                <p className="text-xl font-bold">{fmt(openRegister.openingAmount)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3 text-green-600" /> Ingresos
+                </p>
+                <p className="text-xl font-bold text-green-600">{fmt(openRegister.totalIngresos)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <TrendingDown className="h-3 w-3 text-red-600" /> Egresos
+                </p>
+                <p className="text-xl font-bold text-red-600">{fmt(openRegister.totalEgresos)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <Equal className="h-3 w-3" /> Esperado en Caja
+                </p>
+                <p className="text-xl font-bold">{fmt(openRegister.calculatedExpected)}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Add movement form */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Plus className="h-4 w-4" /> Registrar Movimiento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                <div className="space-y-1">
+                  <Label className="text-xs">Tipo</Label>
+                  <Select value={movType} onValueChange={(v) => setMovType(v as 'ingreso' | 'egreso')}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ingreso">Ingreso</SelectItem>
+                      <SelectItem value="egreso">Egreso</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Monto ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={movAmount}
+                    onChange={(e) => setMovAmount(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Categoría</Label>
+                  <Select value={movCategory} onValueChange={setMovCategory}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MOVEMENT_CATEGORIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Descripción</Label>
+                  <Input
+                    value={movDescription}
+                    onChange={(e) => setMovDescription(e.target.value)}
+                    placeholder="Detalle..."
+                  />
+                </div>
+                <Button onClick={handleAddMovement} disabled={isAddingMov}>
+                  {isAddingMov ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                  Agregar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Movements table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Movimientos de la Caja</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {openRegister.movements.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No hay movimientos registrados todavía
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Hora</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Categoría</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead className="text-right">Monto</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {openRegister.movements.map((mov) => (
+                        <TableRow key={mov.id}>
+                          <TableCell className="text-xs">{fmtDate(mov.createdAt)}</TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                              mov.type === 'egreso' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                            }`}>
+                              {mov.type === 'egreso' ? <ArrowDownCircle className="h-3 w-3" /> : <ArrowUpCircle className="h-3 w-3" />}
+                              {mov.type === 'venta' ? 'Venta' : mov.type === 'ingreso' ? 'Ingreso' : 'Egreso'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs capitalize">
+                            {mov.category.replace('_', ' ')}
+                          </TableCell>
+                          <TableCell className="text-xs">{mov.description || '—'}</TableCell>
+                          <TableCell className={`text-right font-medium ${mov.type === 'egreso' ? 'text-red-600' : 'text-green-600'}`}>
+                            {mov.type === 'egreso' ? '−' : '+'}{fmt(mov.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Close register */}
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Lock className="h-4 w-4" /> Cerrar Caja
+              </CardTitle>
+              <CardDescription>
+                Monto esperado: <strong>{fmt(openRegister.calculatedExpected)}</strong>. Contá el efectivo real y registrá el cierre.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="closingAmount">Monto en caja real ($)</Label>
+                  <Input
+                    id="closingAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={closingAmount}
+                    onChange={(e) => setClosingAmount(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="closeNote">Nota de cierre (opcional)</Label>
+                  <Input
+                    id="closeNote"
+                    value={closeNote}
+                    onChange={(e) => setCloseNote(e.target.value)}
+                    placeholder="Observaciones..."
+                  />
+                </div>
+              </div>
+              {closingAmount && (
+                <div className={`p-3 rounded-lg text-sm font-medium ${
+                  Number(closingAmount) - openRegister.calculatedExpected >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  Diferencia: {fmt(Number(closingAmount) - openRegister.calculatedExpected)}
+                  {Number(closingAmount) - openRegister.calculatedExpected < 0 && ' (faltante)'}
+                  {Number(closingAmount) - openRegister.calculatedExpected > 0 && ' (sobrante)'}
+                </div>
+              )}
+              <Button onClick={handleCloseCaja} disabled={isClosing} variant="destructive" className="w-full sm:w-auto">
+                {isClosing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
+                Cerrar Caja
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ── History ──────────────────────────────────────────────── */}
+      {history.length > 0 && (
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="h-4 w-4" /> Historial de Cajas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha Apertura</TableHead>
+                    <TableHead>Fecha Cierre</TableHead>
+                    <TableHead className="text-right">Apertura</TableHead>
+                    <TableHead className="text-right">Cierre</TableHead>
+                    <TableHead className="text-right">Esperado</TableHead>
+                    <TableHead className="text-right">Diferencia</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.map((reg) => (
+                    <TableRow key={reg.id}>
+                      <TableCell className="text-xs">{fmtDate(reg.openedAt)}</TableCell>
+                      <TableCell className="text-xs">{reg.closedAt ? fmtDate(reg.closedAt) : '—'}</TableCell>
+                      <TableCell className="text-right">{fmt(reg.openingAmount)}</TableCell>
+                      <TableCell className="text-right">{reg.closingAmount != null ? fmt(reg.closingAmount) : '—'}</TableCell>
+                      <TableCell className="text-right">{reg.expectedAmount != null ? fmt(reg.expectedAmount) : '—'}</TableCell>
+                      <TableCell className={`text-right font-medium ${
+                        (reg.difference ?? 0) < 0 ? 'text-red-600' : (reg.difference ?? 0) > 0 ? 'text-green-600' : ''
+                      }`}>
+                        {reg.difference != null ? fmt(reg.difference) : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

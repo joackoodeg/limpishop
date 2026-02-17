@@ -11,12 +11,22 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { useStoreConfig } from '@/app/components/StoreConfigProvider';
 
-const navLinks = [
+interface NavLink {
+  href: string;
+  label: string;
+  /** If set, only show when this module is enabled */
+  module?: 'cajaDiaria' | 'empleados';
+}
+
+const navLinks: NavLink[] = [
   { href: '/products', label: 'Productos' },
   { href: '/stock', label: 'Stock' },
   { href: '/categories', label: 'Categorías' },
   { href: '/sales', label: 'Ventas' },
+  { href: '/caja', label: 'Caja', module: 'cajaDiaria' },
+  { href: '/empleados', label: 'Empleados', module: 'empleados' },
   { href: '/resumen', label: 'Resumen' },
   { href: '/reports', label: 'Reportes' },
   { href: '/combos', label: 'Combos' },
@@ -27,6 +37,12 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { isModuleEnabled, config } = useStoreConfig();
+
+  // Filter out module-gated links that are disabled
+  const visibleLinks = navLinks.filter(
+    (link) => !link.module || isModuleEnabled(link.module),
+  );
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -45,14 +61,14 @@ const Navbar = () => {
         <Link href="/" className="flex items-center gap-2">
           <img
             src="/images/logo.png"
-            alt="Limpi"
+            alt="Logo"
             className="h-14 w-auto"
           />
         </Link>
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
+          {visibleLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -110,7 +126,7 @@ const Navbar = () => {
               <SheetTitle className="text-left">Menú</SheetTitle>
             </SheetHeader>
             <div className="flex flex-col gap-1 mt-6">
-              {navLinks.map((link) => (
+              {visibleLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

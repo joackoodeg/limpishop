@@ -25,7 +25,7 @@ export default async function HomePage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Bienvenido a Limpi — resumen del día</p>
+        <p className="text-muted-foreground">Resumen del día</p>
       </div>
 
       {/* KPI Cards - Server-side rendered */}

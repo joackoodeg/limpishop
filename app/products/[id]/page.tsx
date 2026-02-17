@@ -6,13 +6,13 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Folder, Pencil, Trash2, Package, Scale, Droplet, Boxes } from 'lucide-react';
+import { Folder, Pencil, Trash2, Package, Scale, Droplet, Boxes, Tag } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge, { movementBadgeType, movementLabel } from '../../components/StatusBadge';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { toast } from 'sonner';
-import { getUnitLabel, getUnitShort, formatStock } from '@/lib/units';
-import { UNIT_OPTIONS } from '@/lib/units';
+import { getUnitLabel, getUnitShort, formatStock, getAvailableUnitOptions } from '@/lib/units';
+import { useStoreConfig } from '@/app/components/StoreConfigProvider';
 
 interface Price {
   quantity: number;
@@ -145,10 +145,12 @@ export default function ProductDetailsPage() {
                 <Scale className="h-4 w-4" />
               ) : product.unit === 'litro' ? (
                 <Droplet className="h-4 w-4" />
-              ) : (
+              ) : product.unit === 'unidad' ? (
                 <Package className="h-4 w-4" />
+              ) : (
+                <Tag className="h-4 w-4" />
               )}
-              {UNIT_OPTIONS.find(o => o.value === (product.unit || 'unidad'))?.label || 'Unidad'}
+              {getUnitLabel(product.unit || 'unidad', 1)}
             </span>
           </div>
 

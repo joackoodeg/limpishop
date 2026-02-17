@@ -170,7 +170,7 @@ export default function EditComboPage({ params }: { params: Promise<{ id: string
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nombre del Combo *</Label>
-                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Ej: Combo Limpieza Básica" required />
+                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Ej: Combo Oferta Especial" required />
               </div>
               <div className="space-y-2">
                 <Label>Descripción</Label>
