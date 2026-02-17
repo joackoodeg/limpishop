@@ -150,6 +150,8 @@ export const cashMovements = sqliteTable('cash_movements', {
 export const employees = sqliteTable('employees', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
+  username: text('username').notNull().unique(),
+  password: text('password').notNull(), // hashed password
   role: text('role').notNull().default('vendedor'), // 'vendedor' | 'admin' | 'cajero'
   phone: text('phone').default(''),
   email: text('email').default(''),
