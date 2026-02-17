@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { sales, saleItems } from '@/lib/db/schema';
 import { desc, and, gte, lte, inArray } from 'drizzle-orm';
 import { DEFAULT_UNIT } from '@/lib/constants';
+import { normalizeDateTime } from '@/lib/utils/date';
 
 export interface SaleItem {
   productId: number;
@@ -31,12 +32,8 @@ export interface SalesFilters {
  */
 export async function getSales(filters?: SalesFilters): Promise<Sale[]> {
   try {
-    const from = filters?.from
-      ? (filters.from.includes('T') ? filters.from : `${filters.from}T00:00:00`)
-      : null;
-    const to = filters?.to
-      ? (filters.to.includes('T') ? filters.to : `${filters.to}T23:59:59`)
-      : null;
+    const from = filters?.from ? normalizeDateTime(filters.from, false) : null;
+    const to = filters?.to ? normalizeDateTime(filters.to, true) : null;
 
     // Build query with optional filters
     const filterConditions = [];

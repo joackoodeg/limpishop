@@ -177,7 +177,7 @@ export default function ProductsList({ initialProducts, categories }: ProductsLi
               <option value="all">Categoría: Todas</option>
               <option value="uncategorized">Sin Categoría</option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
               ))}
             </select>
             <select

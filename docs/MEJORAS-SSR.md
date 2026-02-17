@@ -234,10 +234,16 @@ for (const product of products) {
     .where(eq(productPrices.productId, product.id));
 }
 
-// ✅ Bueno: 2 queries totales
+// ✅ Bueno: 2 queries totales con filtrado
 const allProducts = await db.select().from(products);
-const allPrices = await db.select().from(productPrices);
+const allPrices = await db.select().from(productPrices)
+  .where(inArray(productPrices.productId, allProducts.map(p => p.id)));
 const grouped = groupByProductId(allPrices);
+
+// Similar para ventas
+const allSales = await db.select().from(sales);
+const allItems = await db.select().from(saleItems)
+  .where(inArray(saleItems.saleId, allSales.map(s => s.id)));
 ```
 
 ## Próximos Pasos Recomendados

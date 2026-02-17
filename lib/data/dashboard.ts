@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { products, sales, saleItems } from '@/lib/db/schema';
 import { gte, sql, eq } from 'drizzle-orm';
+import { getTodayDateString } from '@/lib/utils/date';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -14,7 +15,7 @@ export interface DashboardStats {
  * Uses parallel queries for optimal performance
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayDateString();
   const todayStart = `${today}T00:00:00`;
 
   try {
