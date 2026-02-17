@@ -13,6 +13,9 @@ import {
   comboProducts,
   storeConfig,
   stockMovements,
+  cashRegisters,
+  cashMovements,
+  employees,
 } from './schema';
 import { eq } from 'drizzle-orm';
 
@@ -43,9 +46,10 @@ const now = daysAgo(0);
 async function seed() {
   console.log('🌱 Iniciando seed de datos de demostración...\n');
 
-  // ── 0. Limpiar tablas ──────────────────────────────────────────────────
+  // ── 0. Limpiar tablas (orden respeta FK constraints) ───────────────────
   console.log('🗑️  Limpiando tablas existentes...');
   await db.delete(stockMovements);
+  await db.delete(cashMovements);
   await db.delete(saleItems);
   await db.delete(sales);
   await db.delete(comboProducts);
@@ -53,6 +57,8 @@ async function seed() {
   await db.delete(productPrices);
   await db.delete(products);
   await db.delete(categories);
+  await db.delete(cashRegisters);
+  await db.delete(employees);
   await db.delete(storeConfig);
   console.log('   ✅ Tablas limpiadas\n');
 
@@ -277,7 +283,49 @@ async function seed() {
   }
   console.log(`   ✅ ${comboData.length} combos creados`);
 
-  // ── 6. Reposiciones de stock (simuladas) ───────────────────────────────
+  // ── 6. Caja Diaria (Cash Registers) ────────────────────────────────────
+  console.log('💰 Creando cajas diarias de ejemplo...');
+
+  const cashRegisterData = [];
+  // Crear cajas cerradas para los últimos 7 días hábiles
+  for (let day = 7; day >= 1; day--) {
+    const openedAt = daysAgoWithHour(day, 8);
+    const closedAt = daysAgoWithHour(day, 20);
+    const openingAmount = day === 7 ? 10000 : cashRegisterData.length > 0 ? cashRegisterData[cashRegisterData.length - 1].closingAmount : 10000;
+    const closingAmount = openingAmount + Math.floor(Math.random() * 5000) + 2000;
+    cashRegisterData.push({ openedAt, closedAt, openingAmount, closingAmount, status: 'closed' as const });
+  }
+
+  const insertedRegisters = [];
+  for (const cr of cashRegisterData) {
+    const [reg] = await db.insert(cashRegisters).values({
+      openedAt: cr.openedAt,
+      closedAt: cr.closedAt,
+      openingAmount: cr.openingAmount,
+      closingAmount: cr.closingAmount,
+      expectedAmount: cr.closingAmount,
+      difference: 0,
+      status: cr.status,
+      note: '',
+      createdAt: cr.openedAt,
+    }).returning();
+    insertedRegisters.push(reg);
+  }
+
+  // Crear una caja abierta para hoy
+  const lastClosed = cashRegisterData[cashRegisterData.length - 1];
+  const [openRegister] = await db.insert(cashRegisters).values({
+    openedAt: daysAgoWithHour(0, 8),
+    openingAmount: lastClosed.closingAmount,
+    status: 'open',
+    note: 'Caja del día',
+    createdAt: daysAgoWithHour(0, 8),
+  }).returning();
+  insertedRegisters.push(openRegister);
+
+  console.log(`   ✅ ${insertedRegisters.length} cajas diarias creadas (${cashRegisterData.length} cerradas + 1 abierta)\n`);
+
+  // ── 7. Reposiciones de stock (simuladas) ───────────────────────────────
   console.log('📥 Generando reposiciones de stock...');
   let repoCount = 0;
 
@@ -329,12 +377,20 @@ async function seed() {
   }
   console.log(`   ✅ ${repoCount} reposiciones de stock registradas`);
 
-  // ── 7. Ventas + Movimientos de stock por venta ─────────────────────────
+  // ── 8. Ventas + Movimientos de stock por venta ─────────────────────────
   console.log('🧾 Generando historial de ventas con movimientos de stock...');
+
+  // Build a map of day → cashRegisterId for linking sales to registers
+  const dayToRegisterId: Record<number, number> = {};
+  for (let i = 0; i < cashRegisterData.length; i++) {
+    dayToRegisterId[7 - i] = insertedRegisters[i].id; // closed registers for days 7..1
+  }
+  dayToRegisterId[0] = openRegister.id; // today's open register
 
   const paymentMethods = ['efectivo', 'tarjeta', 'transferencia'];
   let saleCount = 0;
   let stockMoveCount = 0;
+  let cashMoveCount = 0;
 
   for (let day = 30; day >= 0; day--) {
     const salesPerDay = day === 0 ? 2 : Math.floor(Math.random() * 3) + (day % 3 === 0 ? 1 : 0);
@@ -367,17 +423,38 @@ async function seed() {
       const grandTotal = items.reduce((sum, i) => sum + i.total, 0);
       const saleHour = 8 + Math.floor(Math.random() * 12);
       const dateStr = daysAgoWithHour(day, saleHour);
+      const chosenPayment = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
 
-      const [sale] = await db.insert(sales).values({
+      // Link sale to cash register if one exists for this day
+      const registerId = dayToRegisterId[day] ?? undefined;
+
+      const saleValues: Record<string, unknown> = {
         grandTotal,
-        paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
+        paymentMethod: chosenPayment,
         date: dateStr,
         createdAt: dateStr,
-      }).returning();
+      };
+      if (registerId) saleValues.cashRegisterId = registerId;
+
+      const [sale] = await db.insert(sales).values(saleValues).returning();
 
       await db.insert(saleItems).values(
         items.map(i => ({ saleId: sale.id, ...i }))
       );
+
+      // Register cash movement if payment is efectivo and there's a register
+      if (chosenPayment === 'efectivo' && registerId) {
+        await db.insert(cashMovements).values({
+          cashRegisterId: registerId,
+          type: 'venta',
+          amount: grandTotal,
+          description: `Venta #${sale.id}`,
+          category: 'venta',
+          referenceId: sale.id,
+          createdAt: dateStr,
+        });
+        cashMoveCount++;
+      }
 
       // Registrar movimientos de stock por cada item vendido
       for (const item of items) {
@@ -411,8 +488,9 @@ async function seed() {
   }
   console.log(`   ✅ ${saleCount} ventas generadas`);
   console.log(`   ✅ ${stockMoveCount} movimientos de stock por ventas registrados`);
+  console.log(`   ✅ ${cashMoveCount} movimientos de caja registrados`);
 
-  // ── 8. Ajustes de stock (ejemplos) ─────────────────────────────────────
+  // ── 9. Ajustes de stock (ejemplos) ─────────────────────────────────────
   console.log('🔧 Registrando ajustes de inventario...');
 
   const ajustes = [
@@ -453,7 +531,9 @@ async function seed() {
   console.log(`      - ${insertedProducts.length} productos`);
   console.log(`      - ${priceCount} precios`);
   console.log(`      - ${comboData.length} combos`);
+  console.log(`      - ${insertedRegisters.length} cajas diarias`);
   console.log(`      - ${saleCount} ventas`);
+  console.log(`      - ${cashMoveCount} movimientos de caja`);
   console.log(`      - ${totalMovements} movimientos de stock`);
   console.log('   Podés iniciar la app con: npm run dev');
   console.log('   Login con contraseña: 123\n');

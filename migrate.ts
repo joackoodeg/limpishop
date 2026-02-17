@@ -3,7 +3,7 @@ import { migrate } from 'drizzle-orm/libsql/migrator';
 import { createClient } from '@libsql/client';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ path: '.env.local' });
 
 const client = createClient({
   url: process.env.TURSO_DATABASE_URL!,
