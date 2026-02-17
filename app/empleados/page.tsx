@@ -40,6 +40,7 @@ import {
 interface Employee {
   id: number;
   name: string;
+  username: string;
   role: string;
   phone: string;
   email: string;
@@ -66,6 +67,8 @@ export default function EmpleadosPage() {
 
   // Form state
   const [formName, setFormName] = useState('');
+  const [formUsername, setFormUsername] = useState('');
+  const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState('vendedor');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
@@ -112,6 +115,8 @@ export default function EmpleadosPage() {
 
   const resetForm = () => {
     setFormName('');
+    setFormUsername('');
+    setFormPassword('');
     setFormRole('vendedor');
     setFormPhone('');
     setFormEmail('');
@@ -121,6 +126,8 @@ export default function EmpleadosPage() {
 
   const startEdit = (emp: Employee) => {
     setFormName(emp.name);
+    setFormUsername(emp.username);
+    setFormPassword('');
     setFormRole(emp.role);
     setFormPhone(emp.phone);
     setFormEmail(emp.email);
@@ -133,19 +140,30 @@ export default function EmpleadosPage() {
       toast.error('El nombre es obligatorio');
       return;
     }
+    if (!editingId && !formUsername.trim()) {
+      toast.error('El nombre de usuario es obligatorio');
+      return;
+    }
+    if (!editingId && (!formPassword || formPassword.length < 6)) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
     setIsSaving(true);
     try {
       const url = editingId ? `/api/employees/${editingId}` : '/api/employees';
       const method = editingId ? 'PUT' : 'POST';
+      const bodyData: Record<string, string> = {
+        name: formName.trim(),
+        username: formUsername.trim(),
+        role: formRole,
+        phone: formPhone,
+        email: formEmail,
+      };
+      if (formPassword) bodyData.password = formPassword;
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formName.trim(),
-          role: formRole,
-          phone: formPhone,
-          email: formEmail,
-        }),
+        body: JSON.stringify(bodyData),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -243,6 +261,29 @@ export default function EmpleadosPage() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="empUsername">Usuario *</Label>
+                <Input
+                  id="empUsername"
+                  value={formUsername}
+                  onChange={(e) => setFormUsername(e.target.value)}
+                  placeholder="usuario123"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="empPassword">
+                  {editingId ? 'Nueva contraseña (opcional)' : 'Contraseña *'}
+                </Label>
+                <Input
+                  id="empPassword"
+                  type="password"
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                  placeholder={editingId ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="empPhone">Teléfono</Label>
                 <Input
                   id="empPhone"
@@ -296,6 +337,7 @@ export default function EmpleadosPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
+                    <TableHead>Usuario</TableHead>
                     <TableHead>Rol</TableHead>
                     <TableHead>Teléfono</TableHead>
                     <TableHead>Email</TableHead>
@@ -307,6 +349,7 @@ export default function EmpleadosPage() {
                   {employeesList.map((emp) => (
                     <TableRow key={emp.id} className={!emp.active ? 'opacity-50' : ''}>
                       <TableCell className="font-medium">{emp.name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{emp.username}</TableCell>
                       <TableCell>
                         <span className="text-xs capitalize px-2 py-0.5 rounded-full bg-muted">
                           {ROLE_OPTIONS.find(r => r.value === emp.role)?.label || emp.role}

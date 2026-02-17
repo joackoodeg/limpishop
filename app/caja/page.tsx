@@ -158,22 +158,25 @@ export default function CajaPage() {
   }
 
   const handleOpenCaja = async () => {
-    if (!openingAmount) {
-      toast.error('Ingresá el monto inicial');
-      return;
-    }
     setIsOpening(true);
     try {
+      const body: Record<string, unknown> = { note: openNote };
+      if (openingAmount !== '') body.openingAmount = Number(openingAmount);
       const res = await fetch('/api/cash-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ openingAmount: Number(openingAmount), note: openNote }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error);
       }
-      toast.success('Caja abierta');
+      const data = await res.json();
+      if (data.usedPreviousAmount) {
+        toast.success('Caja abierta con el monto de cierre de la caja anterior');
+      } else {
+        toast.success('Caja abierta');
+      }
       setOpeningAmount('');
       setOpenNote('');
       await fetchData();
@@ -274,11 +277,31 @@ export default function CajaPage() {
             <CardTitle className="flex items-center gap-2">
               <Unlock className="h-5 w-5" /> Abrir Caja
             </CardTitle>
-            <CardDescription>Ingresá el monto inicial para comenzar la jornada</CardDescription>
+            <CardDescription>Inicia la jornada ingresando el monto en caja</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {history.length > 0 && history[0].closingAmount != null && (
+              <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                <DollarSign className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>
+                  Si dejás el monto en blanco, se usará automáticamente el cierre de la caja anterior:{' '}
+                  <strong>{history[0].closingAmount.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })}</strong>
+                </span>
+              </div>
+            )}
+            {history.length === 0 && (
+              <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                <DollarSign className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>
+                  Si dejás el monto en blanco, la caja abrirá con $0.
+                </span>
+              </div>
+            )}
             <div className="space-y-2">
-              <Label htmlFor="openingAmount">Monto inicial ($)</Label>
+              <Label htmlFor="openingAmount">
+                Monto inicial ($){' '}
+                <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
               <Input
                 id="openingAmount"
                 type="number"
@@ -286,7 +309,11 @@ export default function CajaPage() {
                 min="0"
                 value={openingAmount}
                 onChange={(e) => setOpeningAmount(e.target.value)}
-                placeholder="0.00"
+                placeholder={
+                  history.length > 0 && history[0].closingAmount != null
+                    ? history[0].closingAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })
+                    : '0.00'
+                }
               />
             </div>
             <div className="space-y-2">

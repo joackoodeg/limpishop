@@ -64,18 +64,25 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { note = '' } = body;
+    const { note = '', openingAmount: rawOpeningAmount } = body;
 
-    // Get the most recent closed cash register to use its closing amount as opening amount
-    const [previousRegister] = await db
-      .select()
-      .from(cashRegisters)
-      .where(eq(cashRegisters.status, 'closed'))
-      .orderBy(desc(cashRegisters.closedAt))
-      .limit(1);
+    let openingAmount: number;
+    let usedPrevious = false;
 
-    // Use previous register's closing amount if available, otherwise default to 0
-    const openingAmount = previousRegister?.closingAmount ?? 0;
+    if (rawOpeningAmount !== undefined && rawOpeningAmount !== null && rawOpeningAmount !== '') {
+      // User explicitly provided an amount
+      openingAmount = Number(rawOpeningAmount);
+    } else {
+      // Fall back to the most recent closed cash register's closing amount
+      const [previousRegister] = await db
+        .select()
+        .from(cashRegisters)
+        .where(eq(cashRegisters.status, 'closed'))
+        .orderBy(desc(cashRegisters.closedAt))
+        .limit(1);
+      openingAmount = previousRegister?.closingAmount ?? 0;
+      usedPrevious = true;
+    }
 
     const [newRegister] = await db
       .insert(cashRegisters)
@@ -86,7 +93,7 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    return NextResponse.json(newRegister, { status: 201 });
+    return NextResponse.json({ ...newRegister, usedPreviousAmount: usedPrevious }, { status: 201 });
   } catch (error) {
     console.error('Error opening cash register:', error);
     return NextResponse.json({ error: 'Error al abrir caja' }, { status: 500 });
