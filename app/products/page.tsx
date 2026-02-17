@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Eye, Folder, Package, Pencil, Power, PowerOff, Search, Star, StarOff } from 'lucide-react';
+import { Eye, Folder, Loader2, Package, Pencil, Power, PowerOff, Search, Star, StarOff } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -52,6 +52,8 @@ export default function ProductsPage() {
     featured: 'all'
   });
   const [categories, setCategories] = useState([]);
+  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -85,6 +87,8 @@ export default function ProductsPage() {
   }
 
   async function handleToggleActive(productId: number) {
+    setProcessingId(productId);
+    setProcessingAction('toggle-active');
     try {
       const res = await fetch(`/api/products/${productId}/toggle-active`, { method: 'PATCH' });
       if (res.ok) {
@@ -93,10 +97,15 @@ export default function ProductsPage() {
       }
     } catch {
       toast.error('Error al actualizar estado');
+    } finally {
+      setProcessingId(null);
+      setProcessingAction(null);
     }
   }
 
   async function handleToggleFeatured(productId: number) {
+    setProcessingId(productId);
+    setProcessingAction('toggle-featured');
     try {
       const res = await fetch(`/api/products/${productId}/toggle-featured`, { method: 'PATCH' });
       if (res.ok) {
@@ -105,6 +114,9 @@ export default function ProductsPage() {
       }
     } catch {
       toast.error('Error al actualizar destacado');
+    } finally {
+      setProcessingId(null);
+      setProcessingAction(null);
     }
   }
 
@@ -303,9 +315,15 @@ export default function ProductsPage() {
                     size="sm"
                     variant={product.active ? 'secondary' : 'success'}
                     onClick={() => handleToggleActive(product.id)}
+                    disabled={processingId === product.id && processingAction === 'toggle-active'}
                   >
                     <span className="inline-flex items-center gap-1">
-                      {product.active ? (
+                      {processingId === product.id && processingAction === 'toggle-active' ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          Procesando...
+                        </>
+                      ) : product.active ? (
                         <>
                           <PowerOff className="h-4 w-4" aria-hidden="true" />
                           Desactivar
@@ -322,9 +340,15 @@ export default function ProductsPage() {
                     size="sm"
                     variant={product.featured ? 'secondary' : 'outline'}
                     onClick={() => handleToggleFeatured(product.id)}
+                    disabled={processingId === product.id && processingAction === 'toggle-featured'}
                   >
                     <span className="inline-flex items-center gap-1">
-                      {product.featured ? (
+                      {processingId === product.id && processingAction === 'toggle-featured' ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          Procesando...
+                        </>
+                      ) : product.featured ? (
                         <>
                           <StarOff className="h-4 w-4" aria-hidden="true" />
                           Quitar destacado
@@ -417,8 +441,11 @@ export default function ProductsPage() {
                             size="sm"
                             variant={product.active ? 'secondary' : 'success'}
                             onClick={() => handleToggleActive(product.id)}
+                            disabled={processingId === product.id && processingAction === 'toggle-active'}
                           >
-                            {product.active ? (
+                            {processingId === product.id && processingAction === 'toggle-active' ? (
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                            ) : product.active ? (
                               <PowerOff className="h-4 w-4" aria-hidden="true" />
                             ) : (
                               <Power className="h-4 w-4" aria-hidden="true" />
@@ -428,8 +455,11 @@ export default function ProductsPage() {
                             size="sm"
                             variant={product.featured ? 'secondary' : 'outline'}
                             onClick={() => handleToggleFeatured(product.id)}
+                            disabled={processingId === product.id && processingAction === 'toggle-featured'}
                           >
-                            {product.featured ? (
+                            {processingId === product.id && processingAction === 'toggle-featured' ? (
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                            ) : product.featured ? (
                               <StarOff className="h-4 w-4" aria-hidden="true" />
                             ) : (
                               <Star className="h-4 w-4" aria-hidden="true" />

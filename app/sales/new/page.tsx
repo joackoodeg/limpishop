@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { getUnitLabel, getUnitShort, formatStock } from '@/lib/units';
 
@@ -37,6 +38,7 @@ export default function NewSalePage() {
   const [customTotal, setCustomTotal] = useState<number | null>(null);
   const [isEditingTotal, setIsEditingTotal] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: number }>({});
+  const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -133,6 +135,7 @@ export default function NewSalePage() {
       toast.error('El carrito está vacío');
       return;
     }
+    setIsProcessing(true);
     try {
       const res = await fetch('/api/sales', {
         method: 'POST',
@@ -151,6 +154,8 @@ export default function NewSalePage() {
       }
     } catch {
       toast.error('Error al procesar la venta');
+    } finally {
+      setIsProcessing(false);
     }
   }
 
@@ -325,8 +330,15 @@ export default function NewSalePage() {
                         </select>
                       </div>
 
-                      <Button className="w-full" size="lg" onClick={handleCheckout}>
-                        Finalizar Venta — ${getFinalTotal().toFixed(2)}
+                      <Button className="w-full" size="lg" onClick={handleCheckout} disabled={isProcessing}>
+                        {isProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Procesando venta...
+                          </>
+                        ) : (
+                          <>Finalizar Venta — ${getFinalTotal().toFixed(2)}</>
+                        )}
                       </Button>
                     </div>
                   </>
@@ -492,8 +504,15 @@ export default function NewSalePage() {
                       </select>
                     </div>
 
-                    <Button className="w-full" size="lg" onClick={handleCheckout}>
-                      Finalizar Venta — ${getFinalTotal().toFixed(2)}
+                    <Button className="w-full" size="lg" onClick={handleCheckout} disabled={isProcessing}>
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Procesando venta...
+                        </>
+                      ) : (
+                        <>Finalizar Venta — ${getFinalTotal().toFixed(2)}</>
+                      )}
                     </Button>
                   </div>
                 </>
