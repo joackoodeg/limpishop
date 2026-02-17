@@ -50,6 +50,13 @@
       "when": 1739972820000,
       "tag": "0006_add_sale_cash_register",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1771355898526,
+      "tag": "0007_lethal_the_liberteens",
+      "breakpoints": true
     }
   ]
 }

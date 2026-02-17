@@ -57,7 +57,7 @@ export async function POST(request) {
       await db.insert(comboProducts).values(
         comboProds.map(cp => ({
           comboId: combo.id,
-          productId: cp.productId ? Number(cp.productId) : null,
+          productId: Number(cp.productId),
           productName: cp.productName,
           quantity: Number(cp.quantity),
           price: Number(cp.price),

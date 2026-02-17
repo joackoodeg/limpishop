@@ -70,7 +70,7 @@ export async function PUT(request, { params }) {
       await db.insert(comboProducts).values(
         comboProds.map(cp => ({
           comboId: numId,
-          productId: cp.productId ? Number(cp.productId) : null,
+          productId: Number(cp.productId),
           productName: cp.productName,
           quantity: Number(cp.quantity),
           price: Number(cp.price),

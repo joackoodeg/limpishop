@@ -54,7 +54,7 @@ export const sales = sqliteTable('sales', {
 export const saleItems = sqliteTable('sale_items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   saleId: integer('sale_id').notNull().references(() => sales.id, { onDelete: 'cascade' }),
-  productId: integer('product_id'),
+  productId: integer('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   productName: text('product_name').notNull(),
   quantity: real('quantity').notNull(),
   price: real('price').notNull(),
@@ -80,7 +80,7 @@ export const combos = sqliteTable('combos', {
 export const comboProducts = sqliteTable('combo_products', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   comboId: integer('combo_id').notNull().references(() => combos.id, { onDelete: 'cascade' }),
-  productId: integer('product_id'),
+  productId: integer('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   productName: text('product_name').notNull(),
   quantity: real('quantity').notNull(),
   price: real('price').notNull(),
