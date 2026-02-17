@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '../../../components/PageHeader';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 
 export default function EditComboPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -291,7 +291,14 @@ export default function EditComboPage({ params }: { params: Promise<{ id: string
         </Card>
 
         <Button type="submit" size="lg" disabled={loading}>
-          {loading ? 'Guardando...' : 'Guardar Cambios'}
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            'Guardar Cambios'
+          )}
         </Button>
       </form>
     </div>

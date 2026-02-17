@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import PageHeader from '../../components/PageHeader';
 import { UNIT_OPTIONS, getUnitLabel, getUnitShort, getStockStep } from '@/lib/units';
-import { ArrowRight, ArrowLeft, Package, DollarSign, Ruler, Scale, Droplet } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, Package, DollarSign, Ruler, Scale, Droplet } from 'lucide-react';
 
 export default function NewProductPage() {
   const [step, setStep] = useState(1);
@@ -24,6 +24,8 @@ export default function NewProductPage() {
 
   // Step 2: Prices
   const [prices, setPrices] = useState([{ quantity: 1, price: '' }]);
+  
+  const [isSaving, setIsSaving] = useState(false);
 
   const router = useRouter();
 
@@ -46,13 +48,20 @@ export default function NewProductPage() {
       toast.error('Agrega al menos un precio');
       return;
     }
-    await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, prices: validPrices, cost, stock, description, unit }),
-    });
-    toast.success('Producto creado');
-    router.push('/products');
+    setIsSaving(true);
+    try {
+      await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, prices: validPrices, cost, stock, description, unit }),
+      });
+      toast.success('Producto creado');
+      router.push('/products');
+    } catch {
+      toast.error('Error al crear producto');
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function handlePriceChange(index: number, field: string, value: string) {
@@ -285,8 +294,15 @@ export default function NewProductPage() {
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Volver
                   </Button>
-                  <Button type="submit">
-                    Guardar Producto
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      'Guardar Producto'
+                    )}
                   </Button>
                 </div>
               </div>

@@ -11,11 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import PageHeader from '../../../components/PageHeader';
 import { UNIT_OPTIONS, getUnitLabel, getUnitShort, getStockStep } from '@/lib/units';
-import { ArrowRight, ArrowLeft, Package, DollarSign, Ruler, Scale, Droplet, Boxes } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, Package, DollarSign, Ruler, Scale, Droplet, Boxes } from 'lucide-react';
 
 export default function EditProductPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Step 1: Basic data
   const [name, setName] = useState('');
@@ -76,13 +77,20 @@ export default function EditProductPage() {
       toast.error('Agrega al menos un precio');
       return;
     }
-    await fetch(`/api/products/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, prices: validPrices, cost, description, active, featured, categoryId, unit }),
-    });
-    toast.success('Producto actualizado');
-    router.push('/products');
+    setIsSaving(true);
+    try {
+      await fetch(`/api/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, prices: validPrices, cost, description, active, featured, categoryId, unit }),
+      });
+      toast.success('Producto actualizado');
+      router.push('/products');
+    } catch {
+      toast.error('Error al actualizar producto');
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function handlePriceChange(index: number, field: string, value: string) {
@@ -338,8 +346,15 @@ export default function EditProductPage() {
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Volver
                   </Button>
-                  <Button type="submit">
-                    Actualizar Producto
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Actualizando...
+                      </>
+                    ) : (
+                      'Actualizar Producto'
+                    )}
                   </Button>
                 </div>
               </div>

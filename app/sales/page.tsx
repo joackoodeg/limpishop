@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Receipt, Trash2 } from 'lucide-react';
+import { Loader2, Receipt, Trash2 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
@@ -36,6 +36,7 @@ export default function SalesPage() {
   const [query, setQuery] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchSales();
@@ -52,9 +53,16 @@ export default function SalesPage() {
   }
 
   async function handleDelete(saleId: number) {
-    await fetch(`/api/sales/${saleId}`, { method: 'DELETE' });
-    toast.success('Venta eliminada y stock restaurado');
-    fetchSales();
+    setDeletingId(saleId);
+    try {
+      await fetch(`/api/sales/${saleId}`, { method: 'DELETE' });
+      toast.success('Venta eliminada y stock restaurado');
+      fetchSales();
+    } catch {
+      toast.error('Error al eliminar venta');
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   function matchesFilter(sale: Sale): boolean {
@@ -137,8 +145,12 @@ export default function SalesPage() {
                       onConfirm={() => handleDelete(sale.id)}
                       confirmLabel="Eliminar"
                     >
-                      <Button size="sm" variant="destructive">
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      <Button size="sm" variant="destructive" disabled={deletingId === sale.id}>
+                        {deletingId === sale.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        )}
                         Eliminar
                       </Button>
                     </ConfirmDialog>

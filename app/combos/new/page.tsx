@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -219,7 +220,14 @@ export default function NewComboPage() {
         </Card>
 
         <Button type="submit" size="lg" disabled={loading}>
-          {loading ? 'Creando...' : 'Crear Combo'}
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creando...
+            </>
+          ) : (
+            'Crear Combo'
+          )}
         </Button>
       </form>
     </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ImagePlus, Pencil, Trash2, Tags } from 'lucide-react';
+import { ImagePlus, Loader2, Pencil, Trash2, Tags } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ export default function CategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showImageUpload, setShowImageUpload] = useState<Record<number, boolean>>({});
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -82,6 +83,7 @@ export default function CategoriesPage() {
   };
 
   const handleDeleteCategory = async (categoryId: number) => {
+    setDeletingId(categoryId);
     try {
       const response = await fetch(`/api/categories/${categoryId}`, { method: 'DELETE' });
       if (response.ok) {
@@ -93,6 +95,8 @@ export default function CategoriesPage() {
       }
     } catch {
       toast.error('Error al eliminar categoría');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -204,8 +208,12 @@ export default function CategoriesPage() {
                       onConfirm={() => handleDeleteCategory(category.id)}
                       confirmLabel="Eliminar"
                     >
-                      <Button size="sm" variant="destructive">
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      <Button size="sm" variant="destructive" disabled={deletingId === category.id}>
+                        {deletingId === category.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        )}
                         <span className="hidden sm:inline ml-1">Eliminar</span>
                       </Button>
                     </ConfirmDialog>

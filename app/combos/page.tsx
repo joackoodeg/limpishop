@@ -8,7 +8,7 @@ import autoTable from 'jspdf-autotable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Eye, Gift, Pencil, Power, PowerOff, Trash2 } from 'lucide-react';
+import { Eye, Gift, Loader2, Pencil, Power, PowerOff, Trash2 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -19,6 +19,9 @@ import { usePagination } from '../hooks/usePagination';
 export default function CombosPage() {
   const [combos, setCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   useEffect(() => { fetchCombos(); }, []);
 
@@ -49,6 +52,8 @@ export default function CombosPage() {
   } = usePagination(combos, { defaultPageSize: 10 });
 
   const toggleComboStatus = async (id: number, currentStatus: boolean) => {
+    setProcessingId(id);
+    setProcessingAction('toggle-status');
     try {
       const combo = combos.find(c => c.id === id);
       const response = await fetch(`/api/combos/${id}`, {
@@ -62,10 +67,15 @@ export default function CombosPage() {
       }
     } catch {
       toast.error('Error al actualizar combo');
+    } finally {
+      setProcessingId(null);
+      setProcessingAction(null);
     }
   };
 
   const deleteCombo = async (id: number) => {
+    setProcessingId(id);
+    setProcessingAction('delete');
     try {
       const response = await fetch(`/api/combos/${id}`, { method: 'DELETE' });
       if (response.ok) {
@@ -74,10 +84,15 @@ export default function CombosPage() {
       }
     } catch {
       toast.error('Error al eliminar combo');
+    } finally {
+      setProcessingId(null);
+      setProcessingAction(null);
     }
   };
 
   const generateCombosPDF = async () => {
+    setGeneratingPDF(true);
+    try {
     const doc = new jsPDF();
     let currentY = 55;
     const pageHeight = doc.internal.pageSize.height;
@@ -177,13 +192,27 @@ export default function CombosPage() {
     }
 
     doc.save(`${storeConfig.storeName}-Combos-${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success('PDF generado exitosamente');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Error al generar PDF');
+    } finally {
+      setGeneratingPDF(false);
+    }
   };
 
   return (
     <div>
       <PageHeader title="Gestión de Combos">
-        <Button variant="secondary" onClick={generateCombosPDF} disabled={loading || combos.length === 0}>
-          Crear PDF
+        <Button variant="secondary" onClick={generateCombosPDF} disabled={loading || combos.length === 0 || generatingPDF}>
+          {generatingPDF ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generando PDF...
+            </>
+          ) : (
+            'Crear PDF'
+          )}
         </Button>
         <Button asChild>
           <Link href="/combos/new">Crear Combo</Link>
@@ -246,9 +275,15 @@ export default function CombosPage() {
                       size="sm"
                       variant={combo.active ? 'secondary' : 'success'}
                       onClick={() => toggleComboStatus(combo.id, combo.active)}
+                      disabled={processingId === combo.id && processingAction === 'toggle-status'}
                     >
                       <span className="inline-flex items-center gap-1">
-                        {combo.active ? (
+                        {processingId === combo.id && processingAction === 'toggle-status' ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                            Procesando...
+                          </>
+                        ) : combo.active ? (
                           <>
                             <PowerOff className="h-4 w-4" aria-hidden="true" />
                             Desactivar
@@ -262,8 +297,12 @@ export default function CombosPage() {
                       </span>
                     </Button>
                     <ConfirmDialog description="¿Eliminar este combo?" onConfirm={() => deleteCombo(combo.id)} confirmLabel="Eliminar">
-                      <Button size="sm" variant="destructive">
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      <Button size="sm" variant="destructive" disabled={processingId === combo.id && processingAction === 'delete'}>
+                        {processingId === combo.id && processingAction === 'delete' ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        )}
                         Eliminar
                       </Button>
                     </ConfirmDialog>
