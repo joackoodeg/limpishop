@@ -85,12 +85,26 @@ export async function POST(request) {
       ? grandTotal
       : items.reduce((total, item) => total + item.price * item.quantity, 0);
 
-    // 3. Create a single sale record (with optional employee)
+    // 2b. Check if there's an open cash register (for linking the sale)
+    let openRegisterId = null;
+    try {
+      const openRegisters = await db.select()
+        .from(cashRegisters)
+        .where(eq(cashRegisters.status, 'open'));
+      if (openRegisters.length > 0) {
+        openRegisterId = openRegisters[0].id;
+      }
+    } catch (_) {
+      // Don't fail the sale if cash register lookup fails
+    }
+
+    // 3. Create a single sale record (with optional employee and cash register)
     const saleValues = {
       grandTotal: finalTotal,
       paymentMethod,
       date: new Date().toISOString(),
     };
+    if (openRegisterId) saleValues.cashRegisterId = openRegisterId;
     if (employeeId) saleValues.employeeId = Number(employeeId);
     if (employeeName) saleValues.employeeName = employeeName;
 
@@ -133,21 +147,16 @@ export async function POST(request) {
     }
 
     // 6. If payment is 'efectivo' and there's an open cash register, record cash movement
-    if (paymentMethod === 'efectivo') {
+    if (paymentMethod === 'efectivo' && openRegisterId) {
       try {
-        const openRegisters = await db.select()
-          .from(cashRegisters)
-          .where(eq(cashRegisters.status, 'open'));
-        if (openRegisters.length > 0) {
-          await db.insert(cashMovements).values({
-            cashRegisterId: openRegisters[0].id,
-            type: 'venta',
-            amount: finalTotal,
-            description: `Venta #${newSale.id}`,
-            category: 'venta',
-            referenceId: newSale.id,
-          });
-        }
+        await db.insert(cashMovements).values({
+          cashRegisterId: openRegisterId,
+          type: 'venta',
+          amount: finalTotal,
+          description: `Venta #${newSale.id}`,
+          category: 'venta',
+          referenceId: newSale.id,
+        });
       } catch (cashErr) {
         // Don't fail the sale if cash register integration fails
         console.error('Cash register integration error:', cashErr);

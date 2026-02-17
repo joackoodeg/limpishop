@@ -43,6 +43,7 @@ export const sales = sqliteTable('sales', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   grandTotal: real('grand_total').notNull(),
   paymentMethod: text('payment_method').notNull(), // 'efectivo' | 'tarjeta' | 'transferencia'
+  cashRegisterId: integer('cash_register_id').references(() => cashRegisters.id), // nullable: null when caja module is disabled or no register open
   employeeId: integer('employee_id'),
   employeeName: text('employee_name'),
   date: text('date').default(sql`(datetime('now'))`).notNull(),
