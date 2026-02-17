@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { products, productPrices, categories } from '@/lib/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, asc } from 'drizzle-orm';
 
 export interface Price {
   quantity: number;
@@ -37,7 +37,7 @@ export interface Category {
  */
 export async function getProducts(): Promise<Product[]> {
   try {
-    const allProducts = await db.select().from(products).orderBy(products.name);
+    const allProducts = await db.select().from(products).orderBy(asc(products.name));
 
     // Fetch prices only for the retrieved products (optimized)
     const allPrices = allProducts.length > 0
@@ -87,7 +87,7 @@ export async function getProducts(): Promise<Product[]> {
  */
 export async function getCategories(): Promise<Category[]> {
   try {
-    const allCategories = await db.select().from(categories).orderBy(categories.name);
+    const allCategories = await db.select().from(categories).orderBy(asc(categories.name));
     return allCategories.map(c => ({
       id: c.id,
       name: c.name,

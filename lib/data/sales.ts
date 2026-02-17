@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { sales, saleItems } from '@/lib/db/schema';
 import { desc, and, gte, lte, inArray } from 'drizzle-orm';
+import { DEFAULT_UNIT } from '@/lib/constants';
 
 export interface SaleItem {
   productId: number;
@@ -65,7 +66,7 @@ export async function getSales(filters?: SalesFilters): Promise<Sale[]> {
         quantity: item.quantity,
         price: item.price,
         size: item.size,
-        unit: item.unit || 'unidad',
+        unit: item.unit || DEFAULT_UNIT,
       });
     }
 
