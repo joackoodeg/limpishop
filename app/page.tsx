@@ -1,19 +1,12 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
 import { BarChart3, FileText, Folder, Gift, Package, ShoppingCart } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { getDashboardStats } from '@/lib/data/dashboard';
+import DashboardStatsCards from './components/DashboardStatsCards';
 
-interface DashboardStats {
-  totalProducts: number;
-  lowStockProducts: number;
-  todaySales: number;
-  todayRevenue: number;
-}
+// Revalidate dashboard every 30 seconds (ISR)
+export const revalidate = 30;
 
 const quickLinks: Array<{ href: string; label: string; icon: LucideIcon; description: string }> = [
   { href: '/products', label: 'Productos', icon: Package, description: 'Gestionar catálogo' },
@@ -24,34 +17,9 @@ const quickLinks: Array<{ href: string; label: string; icon: LucideIcon; descrip
   { href: '/reports', label: 'Reportes', icon: FileText, description: 'Generar PDF' },
 ];
 
-export default function HomePage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        const [productsRes, summaryRes] = await Promise.all([
-          fetch('/api/products'),
-          fetch('/api/sales/summary?from=' + new Date().toISOString().split('T')[0]),
-        ]);
-        const products = await productsRes.json();
-        const summary = await summaryRes.json();
-
-        setStats({
-          totalProducts: products.length,
-          lowStockProducts: products.filter((p: any) => p.stock <= 5 && p.stock > 0).length,
-          todaySales: summary.overall?.units || 0,
-          todayRevenue: summary.overall?.revenue || 0,
-        });
-      } catch {
-        setStats({ totalProducts: 0, lowStockProducts: 0, todaySales: 0, todayRevenue: 0 });
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchStats();
-  }, []);
+export default async function HomePage() {
+  // Fetch stats server-side with revalidation
+  const stats = await getDashboardStats();
 
   return (
     <div className="space-y-8">
@@ -60,66 +28,8 @@ export default function HomePage() {
         <p className="text-muted-foreground">Bienvenido a Limpi — resumen del día</p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Productos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalProducts}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Stock Bajo
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-amber-600">{stats?.lowStockProducts}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Ventas Hoy
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.todaySales} uds</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Ingresos Hoy
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-emerald-600">
-                  ${stats?.todayRevenue.toFixed(2)}
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
+      {/* KPI Cards - Server-side rendered */}
+      <DashboardStatsCards stats={stats} />
 
       {/* Quick Links */}
       <div>

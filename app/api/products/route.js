@@ -3,6 +3,9 @@ import { db } from '@/lib/db';
 import { products, productPrices, categories, stockMovements } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
+// Revalidate this route every 60 seconds (ISR)
+export const revalidate = 60;
+
 export async function GET() {
   try {
     const allProducts = await db.select().from(products).orderBy(products.name);

@@ -3,6 +3,9 @@ import { db } from '@/lib/db';
 import { sales, saleItems, products, stockMovements } from '@/lib/db/schema';
 import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
 
+// Cache sales list for 30 seconds
+export const revalidate = 30;
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
