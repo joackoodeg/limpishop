@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { products, productPrices, categories } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 export interface Price {
   quantity: number;
@@ -39,9 +39,10 @@ export async function getProducts(): Promise<Product[]> {
   try {
     const allProducts = await db.select().from(products).orderBy(products.name);
 
-    // Fetch all prices in one query
+    // Fetch prices only for the retrieved products (optimized)
     const allPrices = allProducts.length > 0
       ? await db.select().from(productPrices)
+          .where(inArray(productPrices.productId, allProducts.map(p => p.id)))
       : [];
 
     // Group prices by product ID
