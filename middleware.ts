@@ -33,7 +33,8 @@ export const config = {
      * - _next/static
      * - _next/image
      * - favicon.ico
+     * - public files (images, etc)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|images).*)',
   ],
 };
