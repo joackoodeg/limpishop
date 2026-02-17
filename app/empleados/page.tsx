@@ -66,6 +66,8 @@ export default function EmpleadosPage() {
 
   // Form state
   const [formName, setFormName] = useState('');
+  const [formUsername, setFormUsername] = useState('');
+  const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState('vendedor');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
@@ -112,6 +114,8 @@ export default function EmpleadosPage() {
 
   const resetForm = () => {
     setFormName('');
+    setFormUsername('');
+    setFormPassword('');
     setFormRole('vendedor');
     setFormPhone('');
     setFormEmail('');
@@ -133,19 +137,32 @@ export default function EmpleadosPage() {
       toast.error('El nombre es obligatorio');
       return;
     }
+    if (!editingId && !formUsername.trim()) {
+      toast.error('El usuario es obligatorio');
+      return;
+    }
+    if (!editingId && formPassword.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
     setIsSaving(true);
     try {
       const url = editingId ? `/api/employees/${editingId}` : '/api/employees';
       const method = editingId ? 'PUT' : 'POST';
+      const payload: Record<string, string> = {
+        name: formName.trim(),
+        role: formRole,
+        phone: formPhone,
+        email: formEmail,
+      };
+      if (!editingId) {
+        payload.username = formUsername.trim();
+        payload.password = formPassword;
+      }
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formName.trim(),
-          role: formRole,
-          phone: formPhone,
-          email: formEmail,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -242,6 +259,29 @@ export default function EmpleadosPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {!editingId && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="empUsername">Usuario *</Label>
+                    <Input
+                      id="empUsername"
+                      value={formUsername}
+                      onChange={(e) => setFormUsername(e.target.value)}
+                      placeholder="nombre.apellido"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="empPassword">Contraseña *</Label>
+                    <Input
+                      id="empPassword"
+                      type="password"
+                      value={formPassword}
+                      onChange={(e) => setFormPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                  </div>
+                </>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="empPhone">Teléfono</Label>
                 <Input
