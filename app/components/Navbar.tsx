@@ -12,6 +12,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useStoreConfig } from '@/app/components/StoreConfigProvider';
+import { ModeToggle } from './ModeToggle';
 
 interface NavLink {
   href: string;
@@ -28,7 +29,7 @@ const navLinks: NavLink[] = [
   { href: '/caja', label: 'Caja', module: 'cajaDiaria' },
   { href: '/empleados', label: 'Empleados', module: 'empleados', adminOnly: true },
   { href: '/resumen', label: 'Resumen', adminOnly: true },
-  { href: '/reports', label: 'Catálogo', adminOnly: true },
+  { href: '/catalogo', label: 'Catálogo', adminOnly: true },
   { href: '/combos', label: 'Combos', adminOnly: true },
   { href: '/config', label: 'Configuración', adminOnly: true },
 ];
@@ -79,7 +80,7 @@ const NavIcon = ({ href }: { href: string }) => {
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       );
-    case '/reports':
+    case '/catalogo':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -124,6 +125,12 @@ const ChevronLeftIcon = () => (
 const ChevronRightIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+  </svg>
+);
+
+const HomeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
   </svg>
 );
 
@@ -194,16 +201,28 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
       >
         {/* Logo + toggle */}
         <div className="flex items-center h-14 border-b px-2 gap-2">
-          {open && (
+          {open ? (
             <Link href="/" className="flex-1 overflow-hidden">
               <img src="/images/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
             </Link>
+          ) : (
+            <div className="flex-1 flex justify-center">
+              <Link href="/" title="Inicio">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-accent"
+                >
+                  <HomeIcon />
+                </Button>
+              </Link>
+            </div>
           )}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={toggleSidebar}
-            className={`flex-shrink-0 ${!open ? 'mx-auto' : ''}`}
+            className={`flex-shrink-0 bg-primary/10 hover:bg-primary/20 border-primary/30 ${!open ? 'mx-auto' : ''}`}
             aria-label={open ? 'Colapsar menú' : 'Expandir menú'}
           >
             {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
@@ -229,13 +248,17 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
           ))}
         </nav>
 
-        {/* User + logout */}
+        {/* User + theme + logout */}
         <div className="border-t p-2 flex flex-col gap-1">
           {currentUser && open && (
             <span className="px-2 py-1 text-xs rounded-md bg-muted text-muted-foreground truncate">
               {isEmployee ? currentUser.employeeName : 'Admin'}
             </span>
           )}
+          <div className={`flex items-center gap-2 px-2 py-1 ${!open ? 'justify-center' : ''}`}>
+            {open && <span className="text-sm text-muted-foreground">Tema</span>}
+            <ModeToggle />
+          </div>
           <button
             onClick={handleLogout}
             title={!open ? 'Cerrar sesión' : undefined}
@@ -258,12 +281,14 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
               <img src="/images/logo.png" alt="Logo" className="h-10 w-auto" />
             </Link>
 
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Menú">
-                  <HamburgerIcon />
-                </Button>
-              </SheetTrigger>
+            <div className="flex items-center gap-1">
+              <ModeToggle />
+              <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Menú">
+                    <HamburgerIcon />
+                  </Button>
+                </SheetTrigger>
               <SheetContent side="right" className="w-72">
                 <SheetHeader>
                   <SheetTitle className="text-left">Menú</SheetTitle>
@@ -302,7 +327,8 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
                   </button>
                 </div>
               </SheetContent>
-            </Sheet>
+              </Sheet>
+            </div>
           </div>
         </header>
 

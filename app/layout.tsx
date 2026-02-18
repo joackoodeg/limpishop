@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import { StoreConfigProvider } from "./components/StoreConfigProvider";
@@ -21,14 +22,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
-        <StoreConfigProvider>
-          <Navbar>
-            <main className="container mx-auto px-4 py-6">{children}</main>
-          </Navbar>
-          <Toaster richColors position="top-right" />
-        </StoreConfigProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" storageKey="limpishop-theme" enableSystem>
+          <StoreConfigProvider>
+            <Navbar>
+              <main className="container mx-auto px-4 py-6">{children}</main>
+            </Navbar>
+            <Toaster richColors position="top-right" />
+          </StoreConfigProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

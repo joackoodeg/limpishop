@@ -17,6 +17,7 @@ import {
   ArrowDownRight,
 } from 'lucide-react';
 import PageHeader from './PageHeader';
+import { DashboardCharts } from './DashboardCharts';
 import type { SalesSummary, Sale } from '@/lib/data/sales';
 
 type DatePreset = 'today' | 'week' | 'month' | 'year' | 'custom';
@@ -259,6 +260,8 @@ export function ResumenContent({
           </CardContent>
         </Card>
       </div>
+
+      <DashboardCharts />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
