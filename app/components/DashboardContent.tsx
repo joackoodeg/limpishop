@@ -38,7 +38,7 @@ const quickLinks: QuickLink[] = [
   { href: '/categories', label: 'Categorías', icon: Folder, iconColor: 'text-cyan-500', description: 'Organizar productos', adminOnly: true },
   { href: '/combos', label: 'Combos', icon: Gift, iconColor: 'text-cyan-500', description: 'Ofertas especiales', adminOnly: true },
   { href: '/empleados', label: 'Empleados', icon: Users, iconColor: 'text-cyan-500', description: 'Gestionar personal', module: 'empleados', adminOnly: true },
-  { href: '/catalog', label: 'Catálogo', icon: FileText, iconColor: 'text-cyan-500', description: 'Ver catálogo', adminOnly: true },
+  { href: '/catalogo', label: 'Catálogo / Reportes PDF', icon: FileText, iconColor: 'text-cyan-500', description: 'Reportes PDF con productos, descripción y categoría', adminOnly: true },
   { href: '/config', label: 'Configuración', icon: Settings, iconColor: 'text-cyan-500', description: 'Ajustes del negocio', adminOnly: true },
 ];
 

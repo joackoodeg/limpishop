@@ -44,7 +44,7 @@ const navLinks: NavLink[] = [
   { href: '/caja', label: 'Caja', module: 'cajaDiaria' },
   { href: '/empleados', label: 'Empleados', module: 'empleados', adminOnly: true },
   { href: '/resumen', label: 'Resumen', adminOnly: true },
-  { href: '/catalog', label: 'Catálogo', adminOnly: true },
+  { href: '/catalogo', label: 'Catálogo / Reportes PDF', adminOnly: true },
   { href: '/combos', label: 'Combos', adminOnly: true },
   { href: '/config', label: 'Configuración', adminOnly: true },
 ];
@@ -67,7 +67,7 @@ const NavIcon = ({ href }: { href: string }) => {
       return <Users {...iconProps} />;
     case '/resumen':
       return <BarChart3 {...iconProps} />;
-    case '/catalog':
+    case '/catalogo':
       return <Grid3x3 {...iconProps} />;
     case '/reports':
       return <BarChart3 {...iconProps} />;
