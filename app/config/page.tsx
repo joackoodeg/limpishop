@@ -175,7 +175,7 @@ export default function ConfigPage() {
           <CardHeader>
             <CardTitle>Información del Negocio</CardTitle>
             <CardDescription>
-              Esta información se mostrará en reportes, PDFs y documentos generados
+              Esta información se mostrará en el catálogo, PDFs y documentos generados
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

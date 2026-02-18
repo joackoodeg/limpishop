@@ -76,7 +76,7 @@ type SortField = 'name' | 'price' | 'category';
 type SortDirection = 'asc' | 'desc';
 
 // ── Component ───────────────────────────────────────────────────────────────
-export default function ReportsPage() {
+export default function CatalogPage() {
   // Data
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);

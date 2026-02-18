@@ -18,9 +18,16 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, JWT_SECRET);
-    return NextResponse.next();
-  } catch (err) {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+
+    // Forward user info as headers so API routes and Server Components can read them
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set('x-user-role', (payload.role as string) ?? 'admin');
+    requestHeaders.set('x-employee-id', String(payload.employeeId ?? ''));
+    requestHeaders.set('x-employee-name', (payload.employeeName as string) ?? '');
+
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  } catch {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 }

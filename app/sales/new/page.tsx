@@ -42,11 +42,29 @@ export default function NewSalePage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [employeesList, setEmployeesList] = useState<{ id: number; name: string; role: string }[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ role: string; employeeId: number | null; employeeName: string | null } | null>(null);
   const router = useRouter();
   const { isModuleEnabled } = useStoreConfig();
 
+  const isEmployee = currentUser !== null && currentUser.role !== 'admin';
+
   useEffect(() => {
     fetchProducts();
+
+    // Fetch current logged-in user
+    fetch('/api/auth/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.authenticated) {
+          setCurrentUser({ role: data.role, employeeId: data.employeeId, employeeName: data.employeeName });
+          // If employee, pre-select themselves
+          if (data.role !== 'admin' && data.employeeId) {
+            setSelectedEmployee(data.employeeId);
+          }
+        }
+      })
+      .catch(() => {});
+
     // Fetch employees if module enabled
     if (isModuleEnabled('empleados')) {
       fetch('/api/employees/active')
@@ -156,7 +174,11 @@ export default function NewSalePage() {
           paymentMethod,
           grandTotal: getFinalTotal(),
           employeeId: selectedEmployee || undefined,
-          employeeName: selectedEmployee ? employeesList.find(e => e.id === selectedEmployee)?.name : undefined,
+          employeeName: selectedEmployee
+            ? (isEmployee
+                ? (currentUser?.employeeName ?? undefined)
+                : employeesList.find(e => e.id === selectedEmployee)?.name)
+            : undefined,
         }),
       });
       if (res.ok) {
@@ -347,19 +369,25 @@ export default function NewSalePage() {
                         </select>
                       </div>
 
-                      {isModuleEnabled('empleados') && employeesList.length > 0 && (
+                      {isModuleEnabled('empleados') && (isEmployee || employeesList.length > 0) && (
                         <div>
                           <Label className="text-sm">Vendedor:</Label>
-                          <select
-                            value={selectedEmployee ?? ''}
-                            onChange={(e) => setSelectedEmployee(e.target.value ? Number(e.target.value) : null)}
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mt-1"
-                          >
-                            <option value="">Sin asignar</option>
-                            {employeesList.map((emp) => (
-                              <option key={emp.id} value={emp.id}>{emp.name}{emp.role ? ` (${emp.role})` : ''}</option>
-                            ))}
-                          </select>
+                          {isEmployee ? (
+                            <div className="mt-1 px-3 py-2 text-sm rounded-md border bg-muted text-muted-foreground">
+                              {currentUser?.employeeName ?? 'Empleado'}
+                            </div>
+                          ) : (
+                            <select
+                              value={selectedEmployee ?? ''}
+                              onChange={(e) => setSelectedEmployee(e.target.value ? Number(e.target.value) : null)}
+                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mt-1"
+                            >
+                              <option value="">Sin asignar</option>
+                              {employeesList.map((emp) => (
+                                <option key={emp.id} value={emp.id}>{emp.name}{emp.role ? ` (${emp.role})` : ''}</option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                       )}
 
@@ -537,19 +565,25 @@ export default function NewSalePage() {
                       </select>
                     </div>
 
-                    {isModuleEnabled('empleados') && employeesList.length > 0 && (
+                    {isModuleEnabled('empleados') && (isEmployee || employeesList.length > 0) && (
                       <div>
                         <Label className="text-sm">Vendedor:</Label>
-                        <select
-                          value={selectedEmployee ?? ''}
-                          onChange={(e) => setSelectedEmployee(e.target.value ? Number(e.target.value) : null)}
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mt-1"
-                        >
-                          <option value="">Sin asignar</option>
-                          {employeesList.map((emp) => (
-                            <option key={emp.id} value={emp.id}>{emp.name}{emp.role ? ` (${emp.role})` : ''}</option>
-                          ))}
-                        </select>
+                        {isEmployee ? (
+                          <div className="mt-1 px-3 py-2 text-sm rounded-md border bg-muted text-muted-foreground">
+                            {currentUser?.employeeName ?? 'Empleado'}
+                          </div>
+                        ) : (
+                          <select
+                            value={selectedEmployee ?? ''}
+                            onChange={(e) => setSelectedEmployee(e.target.value ? Number(e.target.value) : null)}
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mt-1"
+                          >
+                            <option value="">Sin asignar</option>
+                            {employeesList.map((emp) => (
+                              <option key={emp.id} value={emp.id}>{emp.name}{emp.role ? ` (${emp.role})` : ''}</option>
+                            ))}
+                          </select>
+                        )}
                       </div>
                     )}
 
