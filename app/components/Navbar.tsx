@@ -17,7 +17,7 @@ import { ModeToggle } from './ModeToggle';
 interface NavLink {
   href: string;
   label: string;
-  module?: 'cajaDiaria' | 'empleados';
+  module?: 'cajaDiaria' | 'empleados' | 'proveedores';
   adminOnly?: boolean;
 }
 
@@ -31,6 +31,7 @@ const navLinks: NavLink[] = [
   { href: '/resumen', label: 'Resumen', adminOnly: true },
   { href: '/catalogo', label: 'Catálogo', adminOnly: true },
   { href: '/combos', label: 'Combos', adminOnly: true },
+  { href: '/proveedores', label: 'Proveedores', module: 'proveedores', adminOnly: true },
   { href: '/config', label: 'Configuración', adminOnly: true },
 ];
 
@@ -90,6 +91,12 @@ const NavIcon = ({ href }: { href: string }) => {
       return (
         <svg xmlns="http://www.w3.org/2000/svg" className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112-2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+        </svg>
+      );
+    case '/proveedores':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
         </svg>
       );
     case '/config':

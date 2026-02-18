@@ -19,6 +19,7 @@ import {
   Boxes,
   Users,
   DollarSign,
+  Truck,
 } from 'lucide-react';
 import type { StoreConfig, EnabledModules } from '@/lib/types/config';
 import type { CustomUnit } from '@/lib/units';
@@ -46,6 +47,12 @@ const MODULE_DEFS: {
     label: 'Empleados',
     description: 'Gestión de empleados y asignación a ventas',
     icon: Users,
+  },
+  {
+    key: 'proveedores',
+    label: 'Proveedores',
+    description: 'Gestión de proveedores, productos asociados y registro de pagos',
+    icon: Truck,
   },
 ];
 
@@ -297,7 +304,7 @@ export function ConfigContent({ initialConfig }: ConfigContentProps) {
                 <div className="relative">
                   <input
                     type="checkbox"
-                    checked={config.enabledModules[mod.key]}
+                    checked={!!config.enabledModules?.[mod.key]}
                     onChange={() => toggleModule(mod.key)}
                     className="sr-only peer"
                   />

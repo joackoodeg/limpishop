@@ -39,6 +39,7 @@ function parseConfigRow(row: {
     enabledModules: safeJsonParse<EnabledModules>(row.enabledModules, {
       cajaDiaria: false,
       empleados: false,
+      proveedores: false,
     }),
     allowedUnits: safeJsonParse<string[]>(row.allowedUnits, [
       'unidad',

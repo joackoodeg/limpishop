@@ -118,6 +118,8 @@ export const stockMovements = sqliteTable('stock_movements', {
   newStock: real('new_stock').notNull(),
   note: text('note').default(''),
   referenceId: integer('reference_id'), // nullable, vincula a sales.id cuando type='venta'|'devolucion'
+  supplierId: integer('supplier_id'), // nullable, vincula reposiciones a un proveedor
+  supplierCost: real('supplier_cost'), // costo total de la reposición (para balance de proveedor)
   createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
 });
 
@@ -158,4 +160,43 @@ export const employees = sqliteTable('employees', {
   active: integer('active', { mode: 'boolean' }).default(true),
   createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`).notNull(),
+});
+
+// ── Suppliers (Proveedores) ─────────────────────────────────────────────────
+export const suppliers = sqliteTable('suppliers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  contactName: text('contact_name').default(''),
+  phone: text('phone').default(''),
+  email: text('email').default(''),
+  address: text('address').default(''),
+  city: text('city').default(''),
+  taxId: text('tax_id').default(''), // CUIT, RUC, etc.
+  notes: text('notes').default(''),
+  active: integer('active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`).notNull(),
+});
+
+// ── Supplier Products (productos que provee cada proveedor) ─────────────────
+export const supplierProducts = sqliteTable('supplier_products', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  supplierId: integer('supplier_id').notNull().references(() => suppliers.id, { onDelete: 'cascade' }),
+  productId: integer('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  productName: text('product_name').notNull(),
+  cost: real('cost'), // precio de compra al proveedor (opcional)
+  createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
+});
+
+// ── Supplier Payments (pagos a proveedores) ─────────────────────────────────
+export const supplierPayments = sqliteTable('supplier_payments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  supplierId: integer('supplier_id').notNull().references(() => suppliers.id, { onDelete: 'cascade' }),
+  amount: real('amount').notNull(),
+  paymentMethod: text('payment_method').notNull(), // 'efectivo' | 'tarjeta' | 'transferencia'
+  date: text('date').default(sql`(datetime('now'))`).notNull(),
+  note: text('note').default(''),
+  cashRegisterId: integer('cash_register_id').references(() => cashRegisters.id), // nullable link to Caja
+  cashMovementId: integer('cash_movement_id'), // nullable ref to cashMovements.id created
+  createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
 });

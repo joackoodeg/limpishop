@@ -15,8 +15,12 @@ export function getTodayDateString(): string {
  * @param isEndOfDay - If true, sets time to 23:59:59, otherwise 00:00:00
  */
 export function normalizeDateTime(dateStr: string, isEndOfDay = false): string {
-  if (dateStr.includes('T')) {
-    return dateStr;
+  const trimmed = dateStr.trim();
+  if (trimmed.includes('T')) {
+    return trimmed.replace('T', ' ');
   }
-  return isEndOfDay ? `${dateStr}T23:59:59` : `${dateStr}T00:00:00`;
+  if (trimmed.includes(' ')) {
+    return trimmed;
+  }
+  return isEndOfDay ? `${trimmed} 23:59:59` : `${trimmed} 00:00:00`;
 }

@@ -19,7 +19,7 @@ import EmptyState from '../components/EmptyState';
 import Pagination from '../components/Pagination';
 import { usePagination } from '../hooks/usePagination';
 import { formatStock, getUnitShort, getLowStockThreshold } from '@/lib/units';
-import { Boxes, PackagePlus, AlertTriangle, ArrowDownUp, TrendingUp, TrendingDown } from 'lucide-react';
+import { Boxes, PackagePlus, AlertTriangle, ArrowDownUp, TrendingUp, TrendingDown, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface Product {
   id: number;
@@ -74,6 +74,30 @@ function StockPageContent() {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [productSearch, setProductSearch] = useState('');
+
+  // Alert visibility (persisted in localStorage)
+  const [showOutOfStock, setShowOutOfStock] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stock-alert-out-of-stock');
+      return saved !== null ? saved === 'true' : true;
+    }
+    return true;
+  });
+  const [showLowStock, setShowLowStock] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stock-alert-low-stock');
+      return saved !== null ? saved === 'true' : true;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('stock-alert-out-of-stock', String(showOutOfStock));
+  }, [showOutOfStock]);
+
+  useEffect(() => {
+    localStorage.setItem('stock-alert-low-stock', String(showLowStock));
+  }, [showLowStock]);
 
   // Filters
   const [filterProduct, setFilterProduct] = useState<string>(preselectedProduct || '');
@@ -212,24 +236,31 @@ function StockPageContent() {
           {outOfStockProducts.length > 0 && (
             <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
               <CardContent className="pt-4 pb-3">
-                <div className="flex items-center gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setShowOutOfStock(v => !v)}
+                  className="flex items-center gap-2 w-full cursor-pointer"
+                >
+                  {showOutOfStock ? <ChevronDown className="h-4 w-4 text-red-600" /> : <ChevronRight className="h-4 w-4 text-red-600" />}
                   <AlertTriangle className="h-4 w-4 text-red-600" />
                   <span className="text-sm font-semibold text-red-700 dark:text-red-400">
                     Productos agotados ({outOfStockProducts.length})
                   </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {outOfStockProducts.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => { setSelectedProductId(String(p.id)); setMovementType('reposicion'); }}
-                      className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded text-xs font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
-                    >
-                      {p.name}
-                    </button>
-                  ))}
-                </div>
+                </button>
+                {showOutOfStock && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {outOfStockProducts.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => { setSelectedProductId(String(p.id)); setMovementType('reposicion'); }}
+                        className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded text-xs font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -237,24 +268,31 @@ function StockPageContent() {
           {lowStockProducts.length > 0 && (
             <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
               <CardContent className="pt-4 pb-3">
-                <div className="flex items-center gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLowStock(v => !v)}
+                  className="flex items-center gap-2 w-full cursor-pointer"
+                >
+                  {showLowStock ? <ChevronDown className="h-4 w-4 text-amber-600" /> : <ChevronRight className="h-4 w-4 text-amber-600" />}
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
                     Stock bajo ({lowStockProducts.length})
                   </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {lowStockProducts.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => { setSelectedProductId(String(p.id)); setMovementType('reposicion'); }}
-                      className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
-                    >
-                      {p.name} ({formatStock(p.stock, p.unit || 'unidad')})
-                    </button>
-                  ))}
-                </div>
+                </button>
+                {showLowStock && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {lowStockProducts.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => { setSelectedProductId(String(p.id)); setMovementType('reposicion'); }}
+                        className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
+                      >
+                        {p.name} ({formatStock(p.stock, p.unit || 'unidad')})
+                      </button>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

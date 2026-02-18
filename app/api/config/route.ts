@@ -5,9 +5,13 @@ import { eq } from 'drizzle-orm';
 
 // Helper to safely parse JSON fields from the DB row
 function parseConfigRow(row: any) {
+  const defaultModules = { cajaDiaria: false, empleados: false, proveedores: false };
   return {
     ...row,
-    enabledModules: safeJsonParse(row.enabledModules, { cajaDiaria: false, empleados: false }),
+    enabledModules: {
+      ...defaultModules,
+      ...safeJsonParse(row.enabledModules, defaultModules),
+    },
     allowedUnits: safeJsonParse(row.allowedUnits, ['unidad', 'kilo', 'litro']),
     customUnits: safeJsonParse(row.customUnits, []),
   };

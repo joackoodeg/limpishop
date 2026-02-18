@@ -4,6 +4,7 @@ import type { CustomUnit } from '@/lib/units';
 export interface EnabledModules {
   cajaDiaria: boolean;
   empleados: boolean;
+  proveedores: boolean;
 }
 
 export interface StoreConfig {
@@ -24,6 +25,7 @@ export interface StoreConfig {
 export const DEFAULT_ENABLED_MODULES: EnabledModules = {
   cajaDiaria: false,
   empleados: false,
+  proveedores: false,
 };
 
 export const DEFAULT_ALLOWED_UNITS = ['unidad', 'kilo', 'litro'];

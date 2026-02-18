@@ -64,6 +64,13 @@
       "when": 1771355954143,
       "tag": "0008_clear_stepford_cuckoos",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1771376800000,
+      "tag": "0009_add_suppliers",
+      "breakpoints": true
     }
   ]
 }
