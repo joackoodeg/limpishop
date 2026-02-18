@@ -199,7 +199,16 @@ export function CajaContent({
             ? 'Caja abierta — registra movimientos o cerrala'
             : 'No hay caja abierta'
         }
-      />
+      >
+        {openRegister && (
+          <Link
+            href={`/caja/${openRegister.id}`}
+            className="text-primary text-sm hover:underline font-medium"
+          >
+            Ver órdenes de esta caja
+          </Link>
+        )}
+      </PageHeader>
 
       {!openRegister && (
         <Card className="max-w-lg mb-8">
@@ -543,41 +552,57 @@ export function CajaContent({
                     <TableHead className="text-right">Cierre</TableHead>
                     <TableHead className="text-right">Esperado</TableHead>
                     <TableHead className="text-right">Diferencia</TableHead>
+                    <TableHead className="text-right w-24"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.map((reg) => (
-                    <TableRow key={reg.id}>
-                      <TableCell className="text-xs">
-                        {fmtDate(reg.openedAt)}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {reg.closedAt ? fmtDate(reg.closedAt) : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {fmt(reg.openingAmount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {reg.closingAmount != null ? fmt(reg.closingAmount) : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {reg.expectedAmount != null
-                          ? fmt(reg.expectedAmount)
-                          : '—'}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-medium ${
-                          (reg.difference ?? 0) < 0
-                            ? 'text-red-600'
-                            : (reg.difference ?? 0) > 0
-                              ? 'text-green-600'
-                              : ''
-                        }`}
-                      >
-                        {reg.difference != null ? fmt(reg.difference) : '—'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {history.map((reg) => {
+                    return (
+                      <TableRow key={reg.id} className="hover:bg-muted/50">
+                        <TableCell className="text-xs">
+                          <Link
+                            href={`/caja/${reg.id}`}
+                            className="text-primary hover:underline font-medium"
+                          >
+                            {fmtDate(reg.openedAt)}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {reg.closedAt ? fmtDate(reg.closedAt) : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {fmt(reg.openingAmount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {reg.closingAmount != null ? fmt(reg.closingAmount) : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {reg.expectedAmount != null
+                            ? fmt(reg.expectedAmount)
+                            : '—'}
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-medium ${
+                            (reg.difference ?? 0) < 0
+                              ? 'text-red-600'
+                              : (reg.difference ?? 0) > 0
+                                ? 'text-green-600'
+                                : ''
+                          }`}
+                        >
+                          {reg.difference != null ? fmt(reg.difference) : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link
+                            href={`/caja/${reg.id}`}
+                            className="text-primary text-xs hover:underline"
+                          >
+                            Ver órdenes
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { ModeToggle } from './ModeToggle';
 
 interface NavLink {
   href: string;
@@ -160,15 +161,18 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
               <img src="/images/logo.png" alt="Logo" className="h-20 w-auto object-contain" />
             </Link>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className={`flex-shrink-0 ${!open ? 'mx-auto' : ''}`}
-            aria-label={open ? 'Colapsar menú' : 'Expandir menú'}
-          >
-            {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-          </Button>
+          <div className="flex items-center gap-1">
+            <ModeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className={`flex-shrink-0 ${!open ? 'mx-auto' : ''}`}
+              aria-label={open ? 'Colapsar menú' : 'Expandir menú'}
+            >
+              {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+            </Button>
+          </div>
         </div>
 
         {/* Nav links */}
@@ -219,12 +223,14 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
               <img src="/images/logo.png" alt="Logo" className="h-10 w-auto" />
             </Link>
 
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Menú">
-                  <HamburgerIcon />
-                </Button>
-              </SheetTrigger>
+            <div className="flex items-center gap-1">
+              <ModeToggle />
+              <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Menú">
+                    <HamburgerIcon />
+                  </Button>
+                </SheetTrigger>
               <SheetContent side="right" className="w-72">
                 <SheetHeader>
                   <SheetTitle className="text-left">Menú</SheetTitle>
@@ -264,6 +270,7 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
                 </div>
               </SheetContent>
             </Sheet>
+            </div>
           </div>
         </header>
 

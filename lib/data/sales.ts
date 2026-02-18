@@ -83,6 +83,50 @@ export async function getSales(filters?: SalesFilters): Promise<Sale[]> {
   }
 }
 
+/**
+ * Fetch sales for a given cash register (caja) by id
+ */
+export async function getSalesByCashRegisterId(cashRegisterId: number): Promise<Sale[]> {
+  try {
+    const allSales = await db
+      .select()
+      .from(sales)
+      .where(eq(sales.cashRegisterId, cashRegisterId))
+      .orderBy(desc(sales.date));
+
+    if (allSales.length === 0) return [];
+
+    const allItems = await db
+      .select()
+      .from(saleItems)
+      .where(inArray(saleItems.saleId, allSales.map((s) => s.id)));
+
+    const itemsBySale: Record<number, SaleItem[]> = {};
+    for (const item of allItems) {
+      if (!itemsBySale[item.saleId]) itemsBySale[item.saleId] = [];
+      itemsBySale[item.saleId].push({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        size: item.size,
+        unit: item.unit || DEFAULT_UNIT,
+      });
+    }
+
+    return allSales.map((s) => ({
+      id: s.id,
+      items: itemsBySale[s.id] || [],
+      grandTotal: s.grandTotal,
+      paymentMethod: s.paymentMethod,
+      date: s.date,
+    }));
+  } catch (error) {
+    console.error('Error fetching sales by cash register:', error);
+    return [];
+  }
+}
+
 export interface ProductStat {
   id: number | null;
   productName: string;
