@@ -80,11 +80,21 @@ export function SalesListContent({
   const [metodo, setMetodo] = useState(initialMetodo);
   const [empleado, setEmpleado] = useState(initialEmpleado);
   const [sales, setSales] = useState<Sale[]>(initialSales);
-  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('salesViewMode');
+      return (saved as ViewMode) || 'cards';
+    }
+    return 'cards';
+  });
 
   useEffect(() => {
     setSales(initialSales);
   }, [initialSales]);
+
+  useEffect(() => {
+    localStorage.setItem('salesViewMode', viewMode);
+  }, [viewMode]);
 
   // Unique employee names from current sales data
   const employeeOptions = Array.from(
