@@ -65,40 +65,25 @@ export function DashboardContent({ stats, userRole }: DashboardContentProps) {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Productos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Stock Bajo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{stats.lowStockProducts}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ventas Hoy</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.todaySales} uds</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ingresos Hoy</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">
-              ${stats.todayRevenue.toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          { label: 'Productos', value: stats.totalProducts, valueClass: '' },
+          { label: 'Stock Bajo', value: stats.lowStockProducts, valueClass: 'text-amber-600' },
+          { label: 'Ventas Hoy', value: `${stats.todaySales} uds`, valueClass: '' },
+          { label: 'Ingresos Hoy', value: `$${stats.todayRevenue.toFixed(2)}`, valueClass: 'text-emerald-600' },
+        ].map((stat, i) => (
+          <Card
+            key={stat.label}
+            className="animate-page-in"
+            style={{ animationDelay: `${i * 60}ms`, animationFillMode: 'backwards' }}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${stat.valueClass}`}>{stat.value}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div>
@@ -106,7 +91,7 @@ export function DashboardContent({ stats, userRole }: DashboardContentProps) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {visibleLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Card className="h-full hover:bg-accent/50 transition-colors cursor-pointer">
+              <Card className="h-full hover:bg-accent/50 hover:shadow-md transition-colors transition-shadow duration-200 cursor-pointer">
                 <CardContent className="flex flex-col items-center justify-center text-center pt-6 pb-4">
                   <link.icon className={`h-8 w-8 mb-2 ${link.iconColor}`} aria-hidden="true" />
                   <span className="font-medium text-sm">{link.label}</span>

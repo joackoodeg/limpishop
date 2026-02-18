@@ -23,9 +23,13 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={inter.className}>
-        <StoreConfigProvider>
-          <Navbar>
-            <main className="container mx-auto px-4 py-6">{children}</main>
+<StoreConfigProvider>
+            <Navbar>
+            <main className="container mx-auto px-4 py-6">
+              <div className="animate-page-in">
+                {children}
+              </div>
+            </main>
           </Navbar>
           <Toaster richColors position="top-right" />
         </StoreConfigProvider>
