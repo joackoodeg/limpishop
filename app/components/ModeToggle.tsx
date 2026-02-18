@@ -13,7 +13,7 @@ export function ModeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="outline" size="icon" className="h-9 w-9" aria-label="Tema">
+      <Button variant="outline" size="icon" className="h-9 w-9">
         <Sun className="h-[1.2rem] w-[1.2rem]" />
       </Button>
     );
