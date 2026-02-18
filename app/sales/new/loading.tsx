@@ -5,7 +5,9 @@ export default function NewSaleLoading() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-8 w-48" />
-      <div className="hidden lg:grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      {/* Desktop — 2-column */}
+      <div className="hidden lg:grid grid-cols-2 gap-6">
         <Card>
           <CardHeader className="pb-3">
             <Skeleton className="h-6 w-24" />
@@ -28,13 +30,28 @@ export default function NewSaleLoading() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Mobile — tabs */}
       <div className="lg:hidden">
+        <div className="grid grid-cols-2 gap-1 mb-4">
+          <Skeleton className="h-9 rounded-md" />
+          <Skeleton className="h-9 rounded-md" />
+        </div>
         <Card>
-          <CardContent className="pt-6">
-            <Skeleton className="h-64 w-full" />
+          <CardHeader className="pb-3">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-9 w-full mt-2" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-lg" />
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
+

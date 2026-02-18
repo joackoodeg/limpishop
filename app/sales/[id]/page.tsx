@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getBaseUrl } from '@/lib/server-api';
 import SaleDetailContent from './SaleDetailContent';
-import type { Sale } from './SaleDetailContent';
+import type { Sale } from '@/lib/data/sales';
 
 type Props = {
   params: Promise<{ id: string }>;

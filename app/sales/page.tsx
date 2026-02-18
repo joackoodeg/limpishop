@@ -4,8 +4,10 @@ import { SalesListContent } from '../components/SalesListContent';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
+export const revalidate = 60;
+
 interface SalesPageProps {
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; metodo?: string; empleado?: string }>;
 }
 
 function SalesLoading() {
@@ -33,7 +35,11 @@ export default async function SalesPage({ searchParams }: SalesPageProps) {
 
   return (
     <Suspense fallback={<SalesLoading />}>
-      <SalesListContent initialSales={sales} />
+      <SalesListContent
+        initialSales={sales}
+        initialMetodo={params.metodo ?? ''}
+        initialEmpleado={params.empleado ?? ''}
+      />
     </Suspense>
   );
 }

@@ -11,6 +11,16 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -68,6 +78,7 @@ export function CajaContent({
   const [openingAmount, setOpeningAmount] = useState('');
   const [openNote, setOpenNote] = useState('');
   const [isOpening, setIsOpening] = useState(false);
+  const [isOpenDialog, setIsOpenDialog] = useState(false);
 
   const [closingAmount, setClosingAmount] = useState('');
   const [closeNote, setCloseNote] = useState('');
@@ -101,6 +112,7 @@ export function CajaContent({
       }
       setOpeningAmount('');
       setOpenNote('');
+      setIsOpenDialog(false);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al abrir caja');
@@ -211,79 +223,106 @@ export function CajaContent({
       </PageHeader>
 
       {!openRegister && (
-        <Card className="max-w-lg mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Unlock className="h-5 w-5" /> Abrir Caja
-            </CardTitle>
-            <CardDescription>
-              Inicia la jornada ingresando el monto en caja
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {history.length > 0 && history[0].closingAmount != null && (
-              <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                <DollarSign className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>
-                  Si dejás el monto en blanco, se usará automáticamente el cierre
-                  de la caja anterior:{' '}
-                  <strong>
-                    {fmt(history[0].closingAmount)}
-                  </strong>
-                </span>
-              </div>
-            )}
-            {history.length === 0 && (
-              <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                <DollarSign className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>Si dejás el monto en blanco, la caja abrirá con $0.</span>
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="openingAmount">
-                Monto inicial ($){' '}
-                <span className="text-muted-foreground font-normal">(opcional)</span>
-              </Label>
-              <Input
-                id="openingAmount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={openingAmount}
-                onChange={(e) => setOpeningAmount(e.target.value)}
-                placeholder={
-                  history.length > 0 && history[0].closingAmount != null
-                    ? history[0].closingAmount.toLocaleString('es-AR', {
-                        minimumFractionDigits: 2,
-                      })
-                    : '0.00'
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="openNote">Nota (opcional)</Label>
-              <Textarea
-                id="openNote"
-                value={openNote}
-                onChange={(e) => setOpenNote(e.target.value)}
-                placeholder="Detalles de apertura..."
-                rows={2}
-              />
-            </div>
-            <Button
-              onClick={handleOpenCaja}
-              disabled={isOpening}
-              className="w-full"
-            >
-              {isOpening ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Unlock className="h-4 w-4 mr-2" />
-              )}
-              Abrir Caja
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="mx-auto max-w-3xl">
+          <Card className="mb-8">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Unlock className="h-5 w-5" /> Abrir Caja
+              </CardTitle>
+              <CardDescription>
+                Inicia la jornada ingresando el monto en caja
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                Registrá el monto inicial y una nota opcional para comenzar la jornada.
+              </p>
+              <AlertDialog open={isOpenDialog} onOpenChange={setIsOpenDialog}>
+                <AlertDialogTrigger asChild>
+                  <Button className="w-full sm:w-auto">
+                    <Unlock className="h-4 w-4" />
+                    Abrir Caja
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <Unlock className="h-5 w-5" /> Abrir Caja
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Ingresá el monto inicial y confirmá la apertura.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="space-y-4">
+                    {history.length > 0 && history[0].closingAmount != null && (
+                      <div className="flex items-start gap-2 rounded-lg border border-blue-200/70 bg-blue-50/80 px-3 py-2 text-sm text-blue-800">
+                        <DollarSign className="h-4 w-4 mt-0.5 shrink-0" />
+                        <span>
+                          Si dejás el monto en blanco, se usará automáticamente el cierre
+                          de la caja anterior:{' '}
+                          <strong>
+                            {fmt(history[0].closingAmount)}
+                          </strong>
+                        </span>
+                      </div>
+                    )}
+                    {history.length === 0 && (
+                      <div className="flex items-start gap-2 rounded-lg border border-blue-200/70 bg-blue-50/80 px-3 py-2 text-sm text-blue-800">
+                        <DollarSign className="h-4 w-4 mt-0.5 shrink-0" />
+                        <span>Si dejás el monto en blanco, la caja abrirá con $0.</span>
+                      </div>
+                    )}
+                    <div className="border-t border-dashed border-border pt-4" />
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="openingAmount">
+                          Monto inicial ($){' '}
+                          <span className="text-muted-foreground font-normal">(opcional)</span>
+                        </Label>
+                        <Input
+                          id="openingAmount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={openingAmount}
+                          onChange={(e) => setOpeningAmount(e.target.value)}
+                          placeholder={
+                            history.length > 0 && history[0].closingAmount != null
+                              ? history[0].closingAmount.toLocaleString('es-AR', {
+                                  minimumFractionDigits: 2,
+                                })
+                              : '0.00'
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="openNote">Nota (opcional)</Label>
+                        <Textarea
+                          id="openNote"
+                          value={openNote}
+                          onChange={(e) => setOpenNote(e.target.value)}
+                          placeholder="Detalles de apertura..."
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isOpening}>Cancelar</AlertDialogCancel>
+                    <Button onClick={handleOpenCaja} disabled={isOpening}>
+                      {isOpening ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Unlock className="h-4 w-4" />
+                      )}
+                      Abrir Caja
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {openRegister && (

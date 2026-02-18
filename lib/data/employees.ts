@@ -1,7 +1,13 @@
 import { db } from '@/lib/db';
 import { employees, storeConfig } from '@/lib/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import type { EnabledModules } from '@/lib/types/config';
+
+export interface ActiveEmployee {
+  id: number;
+  name: string;
+  role: string;
+}
 
 export interface Employee {
   id: number;
@@ -59,6 +65,23 @@ export async function getEmployees(): Promise<Employee[]> {
     }));
   } catch (error) {
     console.error('Error fetching employees:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch active employees for POS employee selector (server-side)
+ */
+export async function getActiveEmployees(): Promise<ActiveEmployee[]> {
+  try {
+    const rows = await db
+      .select({ id: employees.id, name: employees.name, role: employees.role })
+      .from(employees)
+      .where(eq(employees.active, true))
+      .orderBy(asc(employees.name));
+    return rows as ActiveEmployee[];
+  } catch (error) {
+    console.error('Error fetching active employees:', error);
     return [];
   }
 }

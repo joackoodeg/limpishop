@@ -19,6 +19,7 @@ export interface Sale {
   grandTotal: number;
   paymentMethod: string;
   date: string;
+  employeeName?: string | null;
 }
 
 export interface SalesFilters {
@@ -74,6 +75,7 @@ export async function getSales(filters?: SalesFilters): Promise<Sale[]> {
       grandTotal: s.grandTotal,
       paymentMethod: s.paymentMethod,
       date: s.date,
+      employeeName: s.employeeName ?? null,
     }));
 
     return result;
@@ -120,6 +122,7 @@ export async function getSalesByCashRegisterId(cashRegisterId: number): Promise<
       grandTotal: s.grandTotal,
       paymentMethod: s.paymentMethod,
       date: s.date,
+      employeeName: s.employeeName ?? null,
     }));
   } catch (error) {
     console.error('Error fetching sales by cash register:', error);

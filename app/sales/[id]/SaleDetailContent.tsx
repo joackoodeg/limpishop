@@ -4,27 +4,18 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Trash2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { getUnitShort } from '@/lib/units';
+import type { Sale } from '@/lib/data/sales';
 
-export interface SaleItem {
-  productId: number;
-  productName: string;
-  quantity: number;
-  price: number;
-  size?: number;
-  unit?: string;
-}
-
-export interface Sale {
-  id: number;
-  items: SaleItem[];
-  grandTotal: number;
-  paymentMethod: string;
-  date: string;
-}
+const PAYMENT_VARIANTS: Record<string, 'default' | 'secondary' | 'outline'> = {
+  efectivo: 'default',
+  tarjeta: 'secondary',
+  transferencia: 'outline',
+};
 
 export default function SaleDetailContent({ sale }: { sale: Sale }) {
   const router = useRouter();
@@ -62,8 +53,19 @@ export default function SaleDetailContent({ sale }: { sale: Sale }) {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Método de pago</p>
-              <p className="font-medium capitalize">{sale.paymentMethod}</p>
+              <Badge
+                variant={PAYMENT_VARIANTS[sale.paymentMethod] ?? 'outline'}
+                className="capitalize mt-1"
+              >
+                {sale.paymentMethod}
+              </Badge>
             </div>
+            {sale.employeeName && (
+              <div>
+                <p className="text-sm text-muted-foreground">Vendedor</p>
+                <p className="font-medium">{sale.employeeName}</p>
+              </div>
+            )}
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Total</p>
               <p className="text-2xl font-bold text-emerald-600">

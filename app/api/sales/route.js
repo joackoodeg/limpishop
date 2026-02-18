@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sales, saleItems, products, stockMovements, cashRegisters, cashMovements } from '@/lib/db/schema';
-import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
+import { eq, desc, sql, and, gte, lte, inArray } from 'drizzle-orm';
 
 // Cache sales list for 30 seconds
 export const revalidate = 30;
@@ -28,9 +28,9 @@ export async function GET(request) {
       ? await salesQuery.where(and(...filters))
       : await salesQuery;
 
-    // Fetch all sale items
+    // Fetch sale items only for the retrieved sales (avoid loading all items)
     const allItems = allSales.length > 0
-      ? await db.select().from(saleItems)
+      ? await db.select().from(saleItems).where(inArray(saleItems.saleId, allSales.map(s => s.id)))
       : [];
 
     const itemsBySale = {};
