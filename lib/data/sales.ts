@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
-import { sales, saleItems } from '@/lib/db/schema';
-import { desc, and, gte, lte, inArray } from 'drizzle-orm';
+import { sales, saleItems, products } from '@/lib/db/schema';
+import { desc, and, gte, lte, inArray, eq } from 'drizzle-orm';
 import { DEFAULT_UNIT } from '@/lib/constants';
 import { normalizeDateTime } from '@/lib/utils/date';
 
@@ -80,5 +80,118 @@ export async function getSales(filters?: SalesFilters): Promise<Sale[]> {
   } catch (error) {
     console.error('Error fetching sales:', error);
     return [];
+  }
+}
+
+export interface ProductStat {
+  id: number | null;
+  productName: string;
+  quantity: number;
+  revenue: number;
+  costUnit: number;
+  costTotal: number;
+  netRevenue: number;
+}
+
+export interface SalesSummary {
+  from: string;
+  to: string;
+  overall: { units: number; revenue: number; cost: number; net: number };
+  products: ProductStat[];
+}
+
+/**
+ * Fetch sales summary by date range (server-side)
+ */
+export async function getSalesSummary(
+  filters?: SalesFilters
+): Promise<SalesSummary> {
+  const today = new Date().toISOString().split('T')[0];
+  const from = filters?.from ? normalizeDateTime(filters.from, false) : '1970-01-01T00:00:00';
+  const to = filters?.to ? normalizeDateTime(filters.to, true) : `${today}T23:59:59`;
+
+  try {
+    const rows = await db
+      .select({
+        productId: saleItems.productId,
+        productName: saleItems.productName,
+        quantity: saleItems.quantity,
+        price: saleItems.price,
+      })
+      .from(saleItems)
+      .innerJoin(sales, eq(saleItems.saleId, sales.id))
+      .where(and(gte(sales.date, from), lte(sales.date, to)));
+
+    const productMap: Record<
+      string,
+      { id: number | null; productName: string; quantity: number; revenue: number }
+    > = {};
+    for (const row of rows) {
+      const key = String(row.productId ?? row.productName);
+      if (!productMap[key]) {
+        productMap[key] = {
+          id: row.productId,
+          productName: row.productName,
+          quantity: 0,
+          revenue: 0,
+        };
+      }
+      productMap[key].quantity += row.quantity;
+      productMap[key].revenue += row.price * row.quantity;
+    }
+
+    const productIds = Object.values(productMap)
+      .map((p) => p.id)
+      .filter((id): id is number => id != null);
+    const productCosts: Record<number, number> = {};
+    if (productIds.length > 0) {
+      const prods = await db
+        .select({ id: products.id, cost: products.cost })
+        .from(products);
+      for (const p of prods) {
+        productCosts[p.id] = p.cost ?? 0;
+      }
+    }
+
+    const productStats: ProductStat[] = Object.values(productMap).map((p) => {
+      const costUnit = p.id ? productCosts[p.id] ?? 0 : 0;
+      const costTotal = costUnit * p.quantity;
+      const netRevenue = p.revenue - costTotal;
+      return {
+        id: p.id,
+        productName: p.productName,
+        quantity: p.quantity,
+        revenue: p.revenue,
+        costUnit,
+        costTotal,
+        netRevenue,
+      };
+    });
+    productStats.sort((a, b) => b.quantity - a.quantity);
+
+    const overall = productStats.reduce(
+      (acc, p) => {
+        acc.units += p.quantity;
+        acc.revenue += p.revenue;
+        acc.cost += p.costTotal;
+        return acc;
+      },
+      { units: 0, revenue: 0, cost: 0 }
+    );
+
+    return {
+      from,
+      to,
+      overall: { ...overall, net: overall.revenue - overall.cost },
+      products: productStats,
+    };
+  } catch (error) {
+    console.error('Error fetching sales summary:', error);
+    return {
+      from,
+      to,
+      overall: { units: 0, revenue: 0, cost: 0, net: 0 },
+      products: [],
+    };
   }
 }
