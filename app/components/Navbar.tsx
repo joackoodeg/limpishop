@@ -249,7 +249,7 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
         </nav>
 
         {/* User + theme + logout */}
-        <div className="border-t p-2 flex flex-col gap-1">
+        <div className="border-t p-2 flex flex-col gap-1 mt-auto shrink-0">
           {currentUser && open && (
             <span className="px-2 py-1 text-xs rounded-md bg-muted text-muted-foreground truncate">
               {isEmployee ? currentUser.employeeName : 'Admin'}
@@ -282,14 +282,13 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
             </Link>
 
             <div className="flex items-center gap-1">
-              <ModeToggle />
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" aria-label="Menú">
                     <HamburgerIcon />
                   </Button>
                 </SheetTrigger>
-              <SheetContent side="right" className="w-72">
+              <SheetContent side="right" className="w-72 flex flex-col">
                 <SheetHeader>
                   <SheetTitle className="text-left">Menú</SheetTitle>
                   {currentUser && (
@@ -298,23 +297,30 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
                     </p>
                   )}
                 </SheetHeader>
-                <div className="flex flex-col gap-1 mt-6">
-                  {visibleLinks.map(link => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium transition-colors ${
-                        isActive(link.href)
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                      }`}
-                    >
-                      <NavIcon href={link.href} />
-                      {link.label}
-                    </Link>
-                  ))}
-                  <hr className="my-2" />
+                <div className="flex-1 overflow-y-auto mt-6">
+                  <div className="flex flex-col gap-1">
+                    {visibleLinks.map(link => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium transition-colors ${
+                          isActive(link.href)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <NavIcon href={link.href} />
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                <div className="border-t pt-3 mt-4 flex flex-col gap-2">
+                  <div className="flex items-center gap-2 px-2">
+                    <span className="text-sm text-muted-foreground">Tema</span>
+                    <ModeToggle />
+                  </div>
                   <button
                     onClick={() => {
                       setMobileOpen(false);
