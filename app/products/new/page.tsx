@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,7 +11,9 @@ import { Label } from '@/components/ui/label';
 import PageHeader from '../../components/PageHeader';
 import { getAvailableUnitOptions, getUnitLabel, getUnitShort, getStockStep } from '@/lib/units';
 import { useStoreConfig } from '@/app/components/StoreConfigProvider';
-import { ArrowRight, ArrowLeft, Loader2, Package, DollarSign, Ruler, Scale, Droplet, Tag } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, Package, DollarSign, Ruler, Scale, Droplet, Tag, Truck } from 'lucide-react';
+
+interface Supplier { id: number; name: string; }
 
 export default function NewProductPage() {
   const [step, setStep] = useState(1);
@@ -22,15 +24,26 @@ export default function NewProductPage() {
   const [cost, setCost] = useState('');
   const [stock, setStock] = useState('');
   const [description, setDescription] = useState('');
+  const [supplierId, setSupplierId] = useState<number | null>(null);
 
   // Step 2: Prices
   const [prices, setPrices] = useState([{ quantity: 1, price: '' }]);
   
   const [isSaving, setIsSaving] = useState(false);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   const router = useRouter();
-  const { allowedUnits, customUnits } = useStoreConfig();
+  const { allowedUnits, customUnits, isModuleEnabled } = useStoreConfig();
   const unitOptions = getAvailableUnitOptions(allowedUnits, customUnits);
+  const proveedoresEnabled = isModuleEnabled('proveedores');
+
+  useEffect(() => {
+    if (!proveedoresEnabled) return;
+    fetch('/api/suppliers')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setSuppliers(Array.isArray(data) ? data : []))
+      .catch(() => setSuppliers([]));
+  }, [proveedoresEnabled]);
 
   function canAdvance() {
     return name.trim() !== '' && cost !== '' && stock !== '';
@@ -56,7 +69,7 @@ export default function NewProductPage() {
       await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, prices: validPrices, cost, stock, description, unit }),
+        body: JSON.stringify({ name, prices: validPrices, cost, stock, description, unit, supplierId }),
       });
       toast.success('Producto creado');
       router.push('/products');
@@ -167,6 +180,26 @@ export default function NewProductPage() {
                 <Label htmlFor="description">Descripción (opcional)</Label>
                 <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Detalles del producto..." />
               </div>
+
+              {proveedoresEnabled && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    Proveedor (opcional)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Asocia este producto a un proveedor</p>
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={supplierId ?? ''}
+                    onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">— Sin proveedor —</option>
+                    {suppliers.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex justify-end pt-2">
                 <Button type="button" onClick={goToStep2} disabled={!canAdvance()}>

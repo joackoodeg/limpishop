@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productPrices, categories } from '@/lib/db/schema';
+import { products, productPrices, categories, supplierProducts } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 function formatProduct(product, prices) {
@@ -26,8 +26,9 @@ export async function GET(request, context) {
     }
 
     const prices = await db.select().from(productPrices).where(eq(productPrices.productId, numId));
+    const [sp] = await db.select().from(supplierProducts).where(eq(supplierProducts.productId, numId));
 
-    return NextResponse.json(formatProduct(product, prices));
+    return NextResponse.json({ ...formatProduct(product, prices), supplierId: sp?.supplierId ?? null });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: 'Error fetching product' }, { status: 500 });
@@ -38,7 +39,7 @@ export async function PUT(request, context) {
   try {
     const { id } = await context.params;
     const numId = Number(id);
-    const { name, prices, cost, description, categoryId, active, featured, unit } = await request.json();
+    const { name, prices, cost, description, categoryId, active, featured, unit, supplierId } = await request.json();
 
     if (isNaN(numId)) {
       return NextResponse.json({ error: 'Invalid product ID' }, { status: 400 });
@@ -85,6 +86,16 @@ export async function PUT(request, context) {
     }
 
     const newPrices = await db.select().from(productPrices).where(eq(productPrices.productId, numId));
+
+    // Update supplier association: delete old, insert new if provided
+    await db.delete(supplierProducts).where(eq(supplierProducts.productId, numId));
+    if (supplierId) {
+      await db.insert(supplierProducts).values({
+        supplierId: Number(supplierId),
+        productId: numId,
+        productName: updated.name,
+      });
+    }
 
     return NextResponse.json({ message: 'Product updated', product: formatProduct(updated, newPrices) });
   } catch (e) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -12,7 +12,9 @@ import { Label } from '@/components/ui/label';
 import PageHeader from '../../../components/PageHeader';
 import { getAvailableUnitOptions, getUnitLabel, getUnitShort, getStockStep } from '@/lib/units';
 import { useStoreConfig } from '@/app/components/StoreConfigProvider';
-import { ArrowRight, ArrowLeft, Loader2, Package, DollarSign, Ruler, Scale, Droplet, Boxes, Tag } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, Package, DollarSign, Ruler, Scale, Droplet, Boxes, Tag, Truck } from 'lucide-react';
+
+interface Supplier { id: number; name: string; }
 
 export interface ProductForEdit {
   id: number;
@@ -25,6 +27,7 @@ export interface ProductForEdit {
   active?: boolean;
   featured?: boolean;
   categoryId?: number | null;
+  supplierId?: number | null;
 }
 
 export default function EditProductForm({
@@ -45,15 +48,26 @@ export default function EditProductForm({
   const [active, setActive] = useState(initialProduct.active ?? true);
   const [featured, setFeatured] = useState(initialProduct.featured ?? false);
   const [categoryId, setCategoryId] = useState<number | null>(initialProduct.categoryId ?? null);
+  const [supplierId, setSupplierId] = useState<number | null>(initialProduct.supplierId ?? null);
   const [prices, setPrices] = useState(
     initialProduct.prices?.length > 0
       ? initialProduct.prices.map((p) => ({ quantity: p.quantity, price: String(p.price) }))
       : [{ quantity: 1, price: '' }]
   );
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   const router = useRouter();
-  const { allowedUnits, customUnits } = useStoreConfig();
+  const { allowedUnits, customUnits, isModuleEnabled } = useStoreConfig();
   const unitOptions = getAvailableUnitOptions(allowedUnits, customUnits);
+  const proveedoresEnabled = isModuleEnabled('proveedores');
+
+  useEffect(() => {
+    if (!proveedoresEnabled) return;
+    fetch('/api/suppliers')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setSuppliers(Array.isArray(data) ? data : []))
+      .catch(() => setSuppliers([]));
+  }, [proveedoresEnabled]);
 
   function canAdvance() {
     return name.trim() !== '' && cost !== '';
@@ -88,6 +102,7 @@ export default function EditProductForm({
           featured,
           categoryId,
           unit,
+          supplierId,
         }),
       });
       toast.success('Producto actualizado');
@@ -235,6 +250,26 @@ export default function EditProductForm({
                   placeholder="Detalles del producto..."
                 />
               </div>
+
+              {proveedoresEnabled && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    Proveedor (opcional)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Asocia este producto a un proveedor</p>
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={supplierId ?? ''}
+                    onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">— Sin proveedor —</option>
+                    {suppliers.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex justify-end pt-2">
                 <Button type="button" onClick={goToStep2} disabled={!canAdvance()}>

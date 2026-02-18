@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { products, productPrices, categories, stockMovements } from '@/lib/db/schema';
+import { products, productPrices, categories, stockMovements, supplierProducts } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 // Revalidate this route every 60 seconds (ISR)
@@ -35,7 +35,7 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { name, prices, cost, stock, description, categoryId, unit } = await request.json();
+    const { name, prices, cost, stock, description, categoryId, unit, supplierId } = await request.json();
 
     const productData = {
       name,
@@ -81,6 +81,15 @@ export async function POST(request) {
           price: Number(p.price),
         }))
       );
+    }
+
+    // Associate supplier if provided
+    if (supplierId) {
+      await db.insert(supplierProducts).values({
+        supplierId: Number(supplierId),
+        productId: inserted.id,
+        productName: inserted.name,
+      });
     }
 
     // Fetch prices back
