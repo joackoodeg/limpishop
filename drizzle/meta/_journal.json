@@ -71,6 +71,13 @@
       "when": 1771376800000,
       "tag": "0009_add_suppliers",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1771463200000,
+      "tag": "0010_add_combo_to_sale_items",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,8 @@ export interface SaleItem {
   price: number;
   size: number;
   unit?: string;
+  comboId?: number | null;
+  comboName?: string | null;
 }
 
 export interface Sale {
@@ -65,6 +67,8 @@ export async function getSales(filters?: SalesFilters): Promise<Sale[]> {
         price: item.price,
         size: item.size,
         unit: item.unit || DEFAULT_UNIT,
+        comboId: item.comboId ?? null,
+        comboName: item.comboName ?? null,
       });
     }
 
@@ -113,6 +117,8 @@ export async function getSalesByCashRegisterId(cashRegisterId: number): Promise<
         price: item.price,
         size: item.size,
         unit: item.unit || DEFAULT_UNIT,
+        comboId: item.comboId ?? null,
+        comboName: item.comboName ?? null,
       });
     }
 

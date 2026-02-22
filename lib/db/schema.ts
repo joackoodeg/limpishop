@@ -61,6 +61,9 @@ export const saleItems = sqliteTable('sale_items', {
   size: real('size'),
   unit: text('unit').default('unidad'),
   total: real('total'),
+  // Combo linkage — null when item was sold individually
+  comboId: integer('combo_id').references(() => combos.id),
+  comboName: text('combo_name'),
 });
 
 // ── Combos ──────────────────────────────────────────────────────────────────

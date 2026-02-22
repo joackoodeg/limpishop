@@ -21,6 +21,7 @@ import { getUnitLabel, formatStock } from '@/lib/units';
 import { useStoreConfig } from '@/app/components/StoreConfigProvider';
 import type { Product } from '@/lib/data/products';
 import type { ActiveEmployee } from '@/lib/data/employees';
+import type { Combo, ComboProduct } from '@/lib/data/combos';
 
 interface CartItem {
   productId: number;
@@ -29,6 +30,14 @@ interface CartItem {
   price: number;
   variant: { quantity: number; price: number };
   unit: string;
+}
+
+interface ComboCartItem {
+  comboId: number;
+  comboName: string;
+  finalPrice: number;
+  quantity: number;
+  products: ComboProduct[];
 }
 
 interface CurrentUser {
@@ -40,6 +49,7 @@ interface CurrentUser {
 interface NewSaleFormProps {
   products: Product[];
   employees: ActiveEmployee[];
+  combos: Combo[];
 }
 
 // ─── Payment badge colours ────────────────────────────────────────────────────
@@ -168,8 +178,97 @@ function CartItemRow({
   );
 }
 
+// ─── Combo card ───────────────────────────────────────────────────────────────
+function ComboCard({
+  combo,
+  onAdd,
+}: {
+  combo: Combo;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="border rounded-lg p-3">
+      <h3 className="font-semibold text-sm">{combo.name}</h3>
+      {combo.description && (
+        <p className="text-xs text-muted-foreground mb-1">{combo.description}</p>
+      )}
+      <p className="text-xs text-muted-foreground mb-2">
+        {combo.products.map((p) => `${p.productName} ×${p.quantity}`).join(' · ')}
+      </p>
+      {combo.discountPercentage > 0 && (
+        <p className="text-xs line-through text-muted-foreground">${combo.originalPrice.toFixed(2)}</p>
+      )}
+      <p className="text-sm font-semibold text-emerald-600 mb-2">${combo.finalPrice.toFixed(2)}</p>
+      <Button size="sm" className="w-full" onClick={onAdd}>
+        Agregar Combo
+      </Button>
+    </div>
+  );
+}
+
+// ─── Combo cart item row ──────────────────────────────────────────────────────
+function ComboCartItemRow({
+  item,
+  index,
+  onQuantityChange,
+  onRemove,
+}: {
+  item: ComboCartItem;
+  index: number;
+  onQuantityChange: (i: number, q: number) => void;
+  onRemove: (i: number) => void;
+}) {
+  return (
+    <div className="p-3 border rounded-lg bg-emerald-50 dark:bg-emerald-950/20">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded px-1.5 py-0.5 font-medium">Combo</span>
+            <h4 className="font-medium text-sm">{item.comboName}</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {item.products.map((p) => `${p.productName} ×${p.quantity}`).join(' · ')}
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-destructive h-7 w-7 p-0"
+          onClick={() => onRemove(index)}
+        >
+          ×
+        </Button>
+      </div>
+      <div className="grid grid-cols-3 gap-2 items-center">
+        <div>
+          <Label className="text-xs">Cant:</Label>
+          <Input
+            type="number"
+            min="1"
+            value={item.quantity}
+            onChange={(e) => onQuantityChange(index, parseInt(e.target.value) || 0)}
+            className="h-8 text-center text-xs"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Precio:</Label>
+          <div className="h-8 flex items-center justify-center font-medium text-sm">
+            ${item.finalPrice.toFixed(2)}
+          </div>
+        </div>
+        <div className="text-center">
+          <Label className="text-xs">Subtotal:</Label>
+          <div className="font-medium text-sm mt-1">
+            ${(item.finalPrice * item.quantity).toFixed(2)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
-export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
+export default function NewSaleForm({ products, employees, combos }: NewSaleFormProps) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [searchTerm, setSearchTerm] = useState('');
@@ -183,6 +282,8 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [comboCart, setComboCart] = useState<ComboCartItem[]>([]);
+  const [comboSearchTerm, setComboSearchTerm] = useState('');
   const router = useRouter();
   const { isModuleEnabled } = useStoreConfig();
 
@@ -272,8 +373,51 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
     setIsEditingTotal(false);
   }
 
+  // ── Combo cart helpers ──────────────────────────────────────────────────────
+  function addComboToCart(combo: Combo) {
+    setComboCart((prev) => {
+      const existingIdx = prev.findIndex((item) => item.comboId === combo.id);
+      if (existingIdx >= 0) {
+        const next = [...prev];
+        next[existingIdx] = { ...next[existingIdx], quantity: next[existingIdx].quantity + 1 };
+        return next;
+      }
+      return [
+        ...prev,
+        {
+          comboId: combo.id,
+          comboName: combo.name,
+          finalPrice: combo.finalPrice,
+          quantity: 1,
+          products: combo.products,
+        },
+      ];
+    });
+    setCustomTotal(null);
+    setIsEditingTotal(false);
+  }
+
+  function removeComboFromCart(index: number) {
+    setComboCart((prev) => prev.filter((_, i) => i !== index));
+    setCustomTotal(null);
+    setIsEditingTotal(false);
+  }
+
+  function updateComboCartQuantity(index: number, newQuantity: number) {
+    if (newQuantity <= 0) { removeComboFromCart(index); return; }
+    setComboCart((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], quantity: newQuantity };
+      return next;
+    });
+    setCustomTotal(null);
+    setIsEditingTotal(false);
+  }
+
   function getCalculatedTotal() {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    const productsTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    const combosTotal = comboCart.reduce((total, item) => total + item.finalPrice * item.quantity, 0);
+    return productsTotal + combosTotal;
   }
 
   function getFinalTotal() {
@@ -290,7 +434,7 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
   }
 
   async function handleCheckout() {
-    if (cart.length === 0) {
+    if (cart.length === 0 && comboCart.length === 0) {
       toast.error('El carrito está vacío');
       return;
     }
@@ -301,6 +445,7 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: cart,
+          comboItems: comboCart,
           paymentMethod,
           grandTotal: getFinalTotal(),
           employeeId: selectedEmployee || undefined,
@@ -314,6 +459,7 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
       if (res.ok) {
         toast.success('Venta realizada con éxito');
         setCart([]);
+        setComboCart([]);
         setCustomTotal(null);
         setIsEditingTotal(false);
         router.push('/sales');
@@ -331,7 +477,12 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
-  const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const filteredCombos = combos.filter((c) =>
+    c.name.toLowerCase().includes(comboSearchTerm.toLowerCase()),
+  );
+  const totalCartItems =
+    cart.reduce((sum, item) => sum + item.quantity, 0) +
+    comboCart.reduce((sum, item) => sum + item.quantity, 0);
 
   // ── Shared checkout panel ─────────────────────────────────────────────────────
   function CheckoutPanel() {
@@ -457,21 +608,51 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
     );
   }
 
+  // ── Combos list panel ────────────────────────────────────────────────────────
+  function CombosPanel() {
+    return (
+      <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-1">
+        {filteredCombos.map((combo) => (
+          <ComboCard
+            key={combo.id}
+            combo={combo}
+            onAdd={() => addComboToCart(combo)}
+          />
+        ))}
+        {filteredCombos.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No se encontraron combos
+          </p>
+        )}
+      </div>
+    );
+  }
+
   // ── Cart panel ────────────────────────────────────────────────────────────────
   function CartPanel() {
-    return cart.length === 0 ? (
+    const isEmpty = cart.length === 0 && comboCart.length === 0;
+    return isEmpty ? (
       <p className="text-muted-foreground text-sm text-center py-8">El carrito está vacío</p>
     ) : (
       <>
         <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pr-1">
           {cart.map((item, index) => (
             <CartItemRow
-              key={index}
+              key={`prod-${index}`}
               item={item}
               index={index}
               onQuantityChange={updateCartQuantity}
               onPriceChange={updateCartPrice}
               onRemove={removeFromCart}
+            />
+          ))}
+          {comboCart.map((item, index) => (
+            <ComboCartItemRow
+              key={`combo-${index}`}
+              item={item}
+              index={index}
+              onQuantityChange={updateComboCartQuantity}
+              onRemove={removeComboFromCart}
             />
           ))}
         </div>
@@ -490,8 +671,9 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
       {/* Mobile — Tabs */}
       <div className="lg:hidden">
         <Tabs defaultValue="productos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="productos">Productos</TabsTrigger>
+            <TabsTrigger value="combos">Combos</TabsTrigger>
             <TabsTrigger value="carrito">
               Carrito {totalCartItems > 0 && `(${totalCartItems})`}
             </TabsTrigger>
@@ -514,6 +696,23 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
             </Card>
           </TabsContent>
 
+          <TabsContent value="combos">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Combos</CardTitle>
+                <Input
+                  type="text"
+                  placeholder="Buscar combos..."
+                  value={comboSearchTerm}
+                  onChange={(e) => setComboSearchTerm(e.target.value)}
+                />
+              </CardHeader>
+              <CardContent>
+                <CombosPanel />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="carrito">
             <Card>
               <CardHeader className="pb-3">
@@ -530,18 +729,32 @@ export default function NewSaleForm({ products, employees }: NewSaleFormProps) {
       {/* Desktop — 2 columns */}
       <div className="hidden lg:grid grid-cols-2 gap-6">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Productos</CardTitle>
-            <Input
-              type="text"
-              placeholder="Buscar productos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <CardHeader className="pb-2">
+            <Tabs defaultValue="productos" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="productos">Productos</TabsTrigger>
+                <TabsTrigger value="combos">Combos</TabsTrigger>
+              </TabsList>
+              <TabsContent value="productos" className="mt-3 space-y-3">
+                <Input
+                  type="text"
+                  placeholder="Buscar productos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <ProductsPanel />
+              </TabsContent>
+              <TabsContent value="combos" className="mt-3 space-y-3">
+                <Input
+                  type="text"
+                  placeholder="Buscar combos..."
+                  value={comboSearchTerm}
+                  onChange={(e) => setComboSearchTerm(e.target.value)}
+                />
+                <CombosPanel />
+              </TabsContent>
+            </Tabs>
           </CardHeader>
-          <CardContent>
-            <ProductsPanel />
-          </CardContent>
         </Card>
 
         <Card>

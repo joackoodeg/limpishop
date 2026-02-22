@@ -80,7 +80,8 @@ export default function SaleDetailContent({ sale }: { sale: Sale }) {
         <CardContent className="pt-6">
           <h3 className="font-semibold mb-3">Items</h3>
           <div className="space-y-2">
-            {sale.items.map((item, index) => (
+            {/* Regular product items (not part of a combo) */}
+            {sale.items.filter((item) => !item.comboId).map((item, index) => (
               <div key={index} className="flex justify-between items-center text-sm">
                 <div>
                   <span className="font-medium">{item.productName}</span>
@@ -95,6 +96,46 @@ export default function SaleDetailContent({ sale }: { sale: Sale }) {
                   <span className="font-medium">
                     ${(item.quantity * item.price).toFixed(2)}
                   </span>
+                </div>
+              </div>
+            ))}
+
+            {/* Combo groups */}
+            {Object.entries(
+              sale.items
+                .filter((item) => item.comboId)
+                .reduce<Record<number, { name: string; comboQty: number; items: typeof sale.items }>>(
+                  (acc, item) => {
+                    const id = item.comboId!;
+                    if (!acc[id]) {
+                      acc[id] = { name: item.comboName || 'Combo', comboQty: item.quantity, items: [] };
+                    }
+                    acc[id].items.push(item);
+                    return acc;
+                  },
+                  {}
+                )
+            ).map(([comboId, group]) => (
+              <div key={`combo-${comboId}`} className="mt-2">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded px-1.5 py-0.5 font-medium">
+                    Combo
+                  </span>
+                  <span className="font-medium text-sm">{group.name}</span>
+                  <span className="text-xs text-muted-foreground">×{group.comboQty}</span>
+                </div>
+                <div className="pl-3 border-l-2 border-emerald-200 dark:border-emerald-800 space-y-1">
+                  {group.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">{item.productName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {group.comboQty} × {item.size ?? 1} {getUnitShort(item.unit || 'unidad')} ={' '}
+                        <span className="font-medium text-foreground">
+                          {(group.comboQty * (item.size ?? 1)).toFixed(2)} {getUnitShort(item.unit || 'unidad')}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

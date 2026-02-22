@@ -28,6 +28,8 @@ export async function GET(request, { params }) {
         price: item.price,
         size: item.size,
         unit: item.unit || 'unidad',
+        comboId: item.comboId ?? null,
+        comboName: item.comboName ?? null,
       })),
     };
 

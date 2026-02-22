@@ -43,6 +43,8 @@ export async function GET(request) {
         price: item.price,
         size: item.size,
         unit: item.unit || 'unidad',
+        comboId: item.comboId ?? null,
+        comboName: item.comboName ?? null,
       });
     }
 
@@ -60,9 +62,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { items, paymentMethod, grandTotal, employeeId, employeeName } = await request.json();
+    const { items, comboItems, paymentMethod, grandTotal, employeeId, employeeName } = await request.json();
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    const hasItems = items && Array.isArray(items) && items.length > 0;
+    const hasComboItems = comboItems && Array.isArray(comboItems) && comboItems.length > 0;
+    if (!hasItems && !hasComboItems) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
     }
     if (!paymentMethod) {
@@ -71,7 +75,7 @@ export async function POST(request) {
 
     // 1. Read current stock for each product before any changes
     const stockSnapshots = {};
-    for (const item of items) {
+    for (const item of (items || [])) {
       const [currentProduct] = await db.select({ stock: products.stock, name: products.name })
         .from(products).where(eq(products.id, Number(item.productId)));
       stockSnapshots[item.productId] = {
@@ -110,8 +114,8 @@ export async function POST(request) {
 
     const [newSale] = await db.insert(sales).values(saleValues).returning();
 
-    // 4. Insert sale items
-    const saleItemsData = items.map(item => ({
+    // 4. Insert sale items (regular products)
+    const saleItemsData = (items || []).map(item => ({
       saleId: newSale.id,
       productId: Number(item.productId),
       productName: item.name,
@@ -121,10 +125,12 @@ export async function POST(request) {
       unit: item.unit || 'unidad',
     }));
 
-    await db.insert(saleItems).values(saleItemsData);
+    if (saleItemsData.length > 0) {
+      await db.insert(saleItems).values(saleItemsData);
+    }
 
-    // 5. Update stock and register movements for each product
-    for (const item of items) {
+    // 5. Update stock and register movements for each regular product
+    for (const item of (items || [])) {
       const stockDecrement = parseFloat(item.quantity) * parseFloat(item.variant.quantity);
       const snapshot = stockSnapshots[item.productId];
       const newStock = Math.max(0, snapshot.prevStock - stockDecrement);
@@ -144,6 +150,48 @@ export async function POST(request) {
         note: `Venta #${newSale.id}`,
         referenceId: newSale.id,
       });
+    }
+
+    // 5b. Process combo items — expand each combo into individual product stock decrements
+    if (hasComboItems) {
+      for (const comboItem of comboItems) {
+        for (const product of comboItem.products) {
+          const stockDecrement = parseFloat(comboItem.quantity) * parseFloat(product.quantity);
+
+          const [currentProduct] = await db.select({ stock: products.stock, name: products.name })
+            .from(products).where(eq(products.id, Number(product.productId)));
+          const prevStock = currentProduct?.stock || 0;
+          const newStock = Math.max(0, prevStock - stockDecrement);
+
+          await db.insert(saleItems).values({
+            saleId: newSale.id,
+            productId: Number(product.productId),
+            productName: product.productName,
+            quantity: parseFloat(comboItem.quantity),
+            price: product.price,
+            size: parseFloat(product.quantity),
+            unit: 'unidad',
+            comboId: comboItem.comboId,
+            comboName: comboItem.comboName,
+          });
+
+          await db.update(products).set({
+            stock: newStock,
+            updatedAt: new Date().toISOString(),
+          }).where(eq(products.id, Number(product.productId)));
+
+          await db.insert(stockMovements).values({
+            productId: Number(product.productId),
+            productName: product.productName,
+            type: 'venta',
+            quantity: -stockDecrement,
+            previousStock: prevStock,
+            newStock: newStock,
+            note: `Venta #${newSale.id} - Combo: ${comboItem.comboName}`,
+            referenceId: newSale.id,
+          });
+        }
+      }
     }
 
     // 6. If payment is 'efectivo' and there's an open cash register, record cash movement
@@ -175,6 +223,8 @@ export async function POST(request) {
         price: si.price,
         size: si.size,
         unit: si.unit || 'unidad',
+        comboId: si.comboId ?? null,
+        comboName: si.comboName ?? null,
       })),
     };
 
