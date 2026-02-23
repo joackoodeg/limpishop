@@ -10,6 +10,7 @@ import PageHeader from './PageHeader';
 import StatusBadge, { movementBadgeType, movementLabel } from './StatusBadge';
 import ConfirmDialog from './ConfirmDialog';
 import { getUnitLabel, formatStock } from '@/lib/units';
+import { formatPrice } from '@/lib/utils';
 import type { Product } from '@/lib/data/products';
 import type { StockMovement } from '@/lib/data/stock';
 
@@ -92,14 +93,14 @@ export function ProductDetailContent({ product, stockMovements }: ProductDetailC
                   <div key={index} className="px-3 py-2 bg-muted rounded-lg text-sm">
                     <div>
                       {p.quantity} {getUnitLabel(product.unit || 'unidad', p.quantity)} —{' '}
-                      <strong>${p.price}</strong>
+                      <strong>{formatPrice(p.price)}</strong>
                     </div>
                     {product.cost != null && product.cost > 0 && (
                       <div
                         className={`text-xs mt-0.5 ${margin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}
                       >
                         Margen: {margin >= 0 ? '+' : ''}
-                        {margin.toFixed(2)}
+                        {formatPrice(margin)}
                       </div>
                     )}
                   </div>
@@ -111,7 +112,7 @@ export function ProductDetailContent({ product, stockMovements }: ProductDetailC
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">Costo:</span>
-              <span className="ml-2 font-medium">${product.cost}</span>
+              <span className="ml-2 font-medium">{formatPrice(product.cost)}</span>
             </div>
             <div>
               <span className="text-muted-foreground">Stock:</span>

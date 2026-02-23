@@ -9,6 +9,7 @@ import { Trash2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { getUnitShort } from '@/lib/units';
+import { formatPrice } from '@/lib/utils';
 import type { Sale } from '@/lib/data/sales';
 
 const PAYMENT_VARIANTS: Record<string, 'default' | 'secondary' | 'outline'> = {
@@ -69,7 +70,7 @@ export default function SaleDetailContent({ sale }: { sale: Sale }) {
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Total</p>
               <p className="text-2xl font-bold text-emerald-600">
-                ${sale.grandTotal.toFixed(2)}
+                {formatPrice(sale.grandTotal)}
               </p>
             </div>
           </div>
@@ -91,10 +92,10 @@ export default function SaleDetailContent({ sale }: { sale: Sale }) {
                 </div>
                 <div className="text-right">
                   <span className="text-muted-foreground">
-                    {item.quantity} × ${item.price} ={' '}
+                    {item.quantity} × {formatPrice(item.price)} ={' '}
                   </span>
                   <span className="font-medium">
-                    ${(item.quantity * item.price).toFixed(2)}
+                    {formatPrice(item.quantity * item.price)}
                   </span>
                 </div>
               </div>

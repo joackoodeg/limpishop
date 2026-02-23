@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import PageHeader from '../../../components/PageHeader';
+import { formatPrice } from '@/lib/utils';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 
 export interface ComboProductItem {
@@ -245,7 +246,7 @@ export default function EditComboForm({
                     <h3 className="font-medium text-sm">{product.name}</h3>
                     <p className="text-xs text-muted-foreground">Stock: {product.stock ?? '—'}</p>
                     {product.prices?.length ? (
-                      <p className="text-sm mb-2">${product.prices[0].price}</p>
+                      <p className="text-sm mb-2">{formatPrice(product.prices[0].price)}</p>
                     ) : null}
                     <Button
                       type="button"
@@ -271,7 +272,7 @@ export default function EditComboForm({
                     >
                       <div className="flex-1">
                         <span className="font-medium text-sm">{cp.productName}</span>
-                        <span className="text-xs text-muted-foreground ml-2">${cp.price}/u</span>
+                        <span className="text-xs text-muted-foreground ml-2">{formatPrice(cp.price)}/u</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Input
@@ -284,7 +285,7 @@ export default function EditComboForm({
                           className="w-20 h-8 text-center text-sm"
                         />
                         <span className="text-sm font-medium w-20 text-right">
-                          ${(cp.price * cp.quantity).toFixed(2)}
+                          {formatPrice(cp.price * cp.quantity)}
                         </span>
                         <Button
                           type="button"
@@ -312,7 +313,7 @@ export default function EditComboForm({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Precio Original</Label>
-                <Input value={`$${originalPrice.toFixed(2)}`} disabled className="bg-muted" />
+                <Input value={formatPrice(originalPrice)} disabled className="bg-muted" />
               </div>
               <div className="space-y-2">
                 <Label>Descuento (%)</Label>

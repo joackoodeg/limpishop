@@ -30,6 +30,7 @@ import EmptyState from './EmptyState';
 import Pagination from './Pagination';
 import { usePagination } from '../hooks/usePagination';
 import { getUnitShort } from '@/lib/units';
+import { formatPrice } from '@/lib/utils';
 import type { Sale } from '@/lib/data/sales';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -218,7 +219,7 @@ export function SalesListContent({
             <span>
               <span className="text-muted-foreground">Total período:</span>{' '}
               <span className="font-semibold text-emerald-600">
-                ${periodTotal.toFixed(2)}
+                {formatPrice(periodTotal)}
               </span>
             </span>
           </div>
@@ -287,7 +288,7 @@ export function SalesListContent({
                     ))}
                   </TableCell>
                   <TableCell className="text-right font-semibold text-emerald-600">
-                    ${sale.grandTotal.toFixed(2)}
+                    {formatPrice(sale.grandTotal)}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1 justify-end">
@@ -340,7 +341,7 @@ export function SalesListContent({
                   </div>
                   <div className="text-right flex flex-col items-end gap-2">
                     <span className="text-xl font-bold text-emerald-600">
-                      ${sale.grandTotal.toFixed(2)}
+                      {formatPrice(sale.grandTotal)}
                     </span>
                     <ConfirmDialog
                       description="¿Eliminar esta venta? Se restaurará el stock."
@@ -368,10 +369,10 @@ export function SalesListContent({
                       </div>
                       <div className="text-right">
                         <span className="text-muted-foreground">
-                          {item.quantity} × ${item.price} ={' '}
+                          {item.quantity} × {formatPrice(item.price)} ={' '}
                         </span>
                         <span className="font-medium">
-                          ${(item.quantity * item.price).toFixed(2)}
+                          {formatPrice(item.quantity * item.price)}
                         </span>
                       </div>
                     </div>

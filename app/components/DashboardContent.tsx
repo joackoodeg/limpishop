@@ -17,6 +17,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useStoreConfig } from '@/app/components/StoreConfigProvider';
 import type { EnabledModules } from '@/lib/types/config';
+import { formatPrice } from '@/lib/utils';
 import type { DashboardStats } from '@/lib/data/dashboard';
 
 interface QuickLink {
@@ -69,7 +70,7 @@ export function DashboardContent({ stats, userRole }: DashboardContentProps) {
           { label: 'Productos', value: stats.totalProducts, valueClass: '' },
           { label: 'Stock Bajo', value: stats.lowStockProducts, valueClass: 'text-amber-600' },
           { label: 'Ventas Hoy', value: `${stats.todaySales} uds`, valueClass: '' },
-          { label: 'Ingresos Hoy', value: `$${stats.todayRevenue.toFixed(2)}`, valueClass: 'text-emerald-600' },
+          { label: 'Ingresos Hoy', value: formatPrice(stats.todayRevenue), valueClass: 'text-emerald-600' },
         ].map((stat, i) => (
           <Card
             key={stat.label}

@@ -210,7 +210,7 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
         <div className="flex items-center h-14 border-b px-2 gap-2">
           {open ? (
             <Link href="/" className="flex-1 overflow-hidden">
-              <img src="/images/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
+              <img src="/images/logo.png" alt="Logo" className="h-20 w-auto object-contain" />
             </Link>
           ) : (
             <div className="flex-1 flex justify-center">
@@ -285,7 +285,7 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
         <header className="md:hidden sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-14 items-center justify-between px-4">
             <Link href="/">
-              <img src="/images/logo.png" alt="Logo" className="h-10 w-auto" />
+              <img src="/images/logo.png" alt="Logo" className="h-14 w-auto" />
             </Link>
 
             <div className="flex items-center gap-1">

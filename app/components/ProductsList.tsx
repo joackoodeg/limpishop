@@ -20,6 +20,7 @@ import StatusBadge, { stockStatus, stockLabel } from './StatusBadge';
 import EmptyState from './EmptyState';
 import Pagination from './Pagination';
 import { usePagination } from '../hooks/usePagination';
+import { formatPrice } from '@/lib/utils';
 import type { Product, Category } from '@/lib/data/products';
 
 interface ProductsListProps {
@@ -222,7 +223,7 @@ export default function ProductsList({ initialProducts, categories }: ProductsLi
                   <div className="flex flex-wrap gap-2">
                     {product.prices?.map((p, i) => (
                       <span key={i} className="text-xs bg-muted px-2 py-1 rounded">
-                        {p.quantity} → ${p.price}
+                        {p.quantity} → {formatPrice(p.price)}
                       </span>
                     ))}
                   </div>
@@ -350,7 +351,7 @@ export default function ProductsList({ initialProducts, categories }: ProductsLi
                         <div className="flex flex-wrap gap-1">
                           {product.prices?.map((p, i) => (
                             <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded">
-                              {p.quantity} → ${p.price}
+                              {p.quantity} → {formatPrice(p.price)}
                             </span>
                           ))}
                         </div>

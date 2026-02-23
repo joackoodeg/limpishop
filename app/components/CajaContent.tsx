@@ -187,11 +187,7 @@ export function CajaContent({
   };
 
   const fmt = (n: number) =>
-    n.toLocaleString('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 2,
-    });
+    `$${Math.round(n).toLocaleString('es-AR')}`;
 
   const fmtDate = (d: string) =>
     new Date(d).toLocaleDateString('es-AR', {
@@ -288,10 +284,8 @@ export function CajaContent({
                           onChange={(e) => setOpeningAmount(e.target.value)}
                           placeholder={
                             history.length > 0 && history[0].closingAmount != null
-                              ? history[0].closingAmount.toLocaleString('es-AR', {
-                                  minimumFractionDigits: 2,
-                                })
-                              : '0.00'
+                              ? `$${Math.round(history[0].closingAmount).toLocaleString('es-AR')}`
+                              : '0'
                           }
                         />
                       </div>

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { DashboardCharts } from './DashboardCharts';
+import { formatPrice } from '@/lib/utils';
 import type { SalesSummary, Sale } from '@/lib/data/sales';
 
 type DatePreset = 'today' | 'week' | 'month' | 'year' | 'custom';
@@ -192,10 +193,7 @@ export function ResumenContent({
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Ingresos totales</p>
                 <p className="text-2xl font-bold mt-1">
-                  $
-                  {stats.overall.revenue.toLocaleString('es-AR', {
-                    minimumFractionDigits: 2,
-                  })}
+                  {formatPrice(stats.overall.revenue)}
                 </p>
               </div>
               <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -225,10 +223,7 @@ export function ResumenContent({
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Costo total</p>
                 <p className="text-2xl font-bold mt-1 text-orange-600 dark:text-orange-400">
-                  $
-                  {stats.overall.cost.toLocaleString('es-AR', {
-                    minimumFractionDigits: 2,
-                  })}
+                  {formatPrice(stats.overall.cost)}
                 </p>
               </div>
               <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
@@ -243,10 +238,7 @@ export function ResumenContent({
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Ganancia neta</p>
                 <p className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
-                  $
-                  {stats.overall.net.toLocaleString('es-AR', {
-                    minimumFractionDigits: 2,
-                  })}
+                  {formatPrice(stats.overall.net)}
                 </p>
                 <Badge variant="secondary" className="mt-1 text-xs">
                   <ArrowUpRight className="h-3 w-3 mr-0.5" />
@@ -335,16 +327,10 @@ export function ResumenContent({
                           {p.quantity}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-right text-sm">
-                          $
-                          {p.revenue.toLocaleString('es-AR', {
-                            minimumFractionDigits: 2,
-                          })}
+                          {formatPrice(p.revenue)}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-right text-sm text-muted-foreground hidden sm:table-cell">
-                          $
-                          {p.costTotal.toLocaleString('es-AR', {
-                            minimumFractionDigits: 2,
-                          })}
+                          {formatPrice(p.costTotal)}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-right text-sm">
                           <span
@@ -354,10 +340,7 @@ export function ResumenContent({
                                 : 'text-red-600 dark:text-red-400 font-medium'
                             }
                           >
-                            $
-                            {p.netRevenue.toLocaleString('es-AR', {
-                              minimumFractionDigits: 2,
-                            })}
+                            {formatPrice(p.netRevenue)}
                           </span>
                           <span className="text-xs text-muted-foreground ml-1">
                             ({profitMargin}%)
@@ -384,22 +367,13 @@ export function ResumenContent({
                       {stats.overall.units.toLocaleString('es-AR')}
                     </td>
                     <td className="px-3 py-3 text-right text-sm">
-                      $
-                      {stats.overall.revenue.toLocaleString('es-AR', {
-                        minimumFractionDigits: 2,
-                      })}
+                      {formatPrice(stats.overall.revenue)}
                     </td>
                     <td className="px-3 py-3 text-right text-sm hidden sm:table-cell">
-                      $
-                      {stats.overall.cost.toLocaleString('es-AR', {
-                        minimumFractionDigits: 2,
-                      })}
+                      {formatPrice(stats.overall.cost)}
                     </td>
                     <td className="px-3 py-3 text-right text-sm text-emerald-600 dark:text-emerald-400">
-                      $
-                      {stats.overall.net.toLocaleString('es-AR', {
-                        minimumFractionDigits: 2,
-                      })}
+                      {formatPrice(stats.overall.net)}
                     </td>
                     <td className="hidden md:table-cell" />
                   </tr>
@@ -462,7 +436,7 @@ export function ResumenContent({
                         {sale.paymentMethod}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-right text-sm font-medium text-emerald-600">
-                        ${sale.grandTotal.toFixed(2)}
+                        {formatPrice(sale.grandTotal)}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-right text-sm text-muted-foreground">
                         {sale.items.length}

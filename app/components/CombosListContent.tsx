@@ -15,6 +15,7 @@ import ConfirmDialog from './ConfirmDialog';
 import EmptyState from './EmptyState';
 import Pagination from './Pagination';
 import { usePagination } from '../hooks/usePagination';
+import { formatPrice } from '@/lib/utils';
 import type { Combo } from '@/lib/data/combos';
 
 interface CombosListContentProps {
@@ -159,8 +160,8 @@ export function CombosListContent({ initialCombos }: CombosListContentProps) {
             currentY += 8;
           }
 
-          const originalPrice = combo.originalPrice?.toFixed(2) || '0.00';
-          const finalPrice = combo.finalPrice?.toFixed(2) || '0.00';
+          const originalPrice = formatPrice(combo.originalPrice ?? 0);
+          const finalPrice = formatPrice(combo.finalPrice ?? 0);
           const discount = combo.discountPercentage || 0;
 
           const tableData: string[][] = [];
@@ -168,20 +169,20 @@ export function CombosListContent({ initialCombos }: CombosListContentProps) {
             tableData.push([
               p.productName,
               p.quantity.toString(),
-              `$${p.price?.toFixed(2) || '0.00'}`,
-              `$${(p.price * p.quantity).toFixed(2)}`,
+              formatPrice(p.price ?? 0),
+              formatPrice(p.price * p.quantity),
             ]);
           });
-          tableData.push(['', '', 'SUBTOTAL:', `$${originalPrice}`]);
+          tableData.push(['', '', 'SUBTOTAL:', originalPrice]);
           if (discount > 0) {
             tableData.push([
               `DESCUENTO ${discount}%:`,
               '',
-              `Antes: $${originalPrice}`,
-              `$${finalPrice}`,
+              `Antes: ${originalPrice}`,
+              finalPrice,
             ]);
           } else {
-            tableData.push(['PRECIO FINAL:', '', '', `$${finalPrice}`]);
+            tableData.push(['PRECIO FINAL:', '', '', finalPrice]);
           }
 
           autoTable(doc, {
@@ -304,8 +305,7 @@ export function CombosListContent({ initialCombos }: CombosListContentProps) {
                       </p>
                       <div className="grid grid-cols-3 gap-2 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Original:</span> $
-                          {combo.originalPrice?.toFixed(2)}
+                          <span className="text-muted-foreground">Original:</span> {formatPrice(combo.originalPrice ?? 0)}
                         </div>
                         <div>
                           <span className="text-muted-foreground">Descuento:</span>{' '}
@@ -313,7 +313,7 @@ export function CombosListContent({ initialCombos }: CombosListContentProps) {
                         </div>
                         <div>
                           <span className="font-semibold text-emerald-600">
-                            Final: ${combo.finalPrice?.toFixed(2)}
+                            Final: {formatPrice(combo.finalPrice ?? 0)}
                           </span>
                         </div>
                       </div>

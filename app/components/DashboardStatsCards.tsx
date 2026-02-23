@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatPrice } from '@/lib/utils';
 
 interface DashboardStats {
   totalProducts: number;
@@ -54,7 +55,7 @@ export default function DashboardStatsCards({ stats }: DashboardStatsCardsProps)
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-emerald-600">
-            ${stats.todayRevenue.toFixed(2)}
+            {formatPrice(stats.todayRevenue)}
           </div>
         </CardContent>
       </Card>

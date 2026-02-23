@@ -37,12 +37,6 @@ const MODULE_DEFS: {
   icon: typeof DollarSign;
 }[] = [
   {
-    key: 'cajaDiaria',
-    label: 'Caja Diaria',
-    description: 'Apertura/cierre de caja, ingresos y egresos manuales',
-    icon: DollarSign,
-  },
-  {
     key: 'empleados',
     label: 'Empleados',
     description: 'Gestión de empleados y asignación a ventas',
@@ -53,6 +47,12 @@ const MODULE_DEFS: {
     label: 'Proveedores',
     description: 'Gestión de proveedores, productos asociados y registro de pagos',
     icon: Truck,
+  },
+    {
+    key: 'cajaDiaria',
+    label: 'Caja Diaria',
+    description: 'Apertura/cierre de caja, ingresos y egresos manuales',
+    icon: DollarSign,
   },
 ];
 

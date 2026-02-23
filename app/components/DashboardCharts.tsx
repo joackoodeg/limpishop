@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatPrice } from '@/lib/utils';
 import type { ChartsData } from '@/app/api/sales/charts/route';
 
 // ─── Date helpers ───────────────────────────────────────────────────────────
@@ -68,7 +69,7 @@ function CurrencyTooltip({ active, payload, label }: any) {
         <p key={p.dataKey} style={{ color: p.color }}>
           {p.name}:{' '}
           {p.dataKey === 'ingresos'
-            ? `$${Number(p.value).toFixed(2)}`
+            ? formatPrice(Number(p.value))
             : p.value}
         </p>
       ))}
@@ -82,7 +83,7 @@ function PieCustomTooltip({ active, payload }: any) {
   return (
     <div className="rounded-lg border bg-background px-3 py-2 text-sm shadow-lg">
       <p className="font-medium capitalize">{method}</p>
-      <p className="text-muted-foreground">{count} ventas · ${total.toFixed(2)}</p>
+      <p className="text-muted-foreground">{count} ventas · {formatPrice(total)}</p>
     </div>
   );
 }
@@ -298,7 +299,7 @@ export function DashboardCharts() {
                   />
                   <YAxis
                     tick={{ fontSize: 11 }}
-                    tickFormatter={(v) => `$${v}`}
+                    tickFormatter={(v) => formatPrice(v)}
                     stroke="hsl(var(--muted-foreground))"
                   />
                   <Tooltip content={<CurrencyTooltip />} />
@@ -352,7 +353,7 @@ export function DashboardCharts() {
                             Unidades: {payload[0]?.value}
                           </p>
                           <p className="text-muted-foreground">
-                            ${(payload[0]?.payload?.revenue ?? 0).toFixed(2)}
+                            {formatPrice(payload[0]?.payload?.revenue ?? 0)}
                           </p>
                         </div>
                       );

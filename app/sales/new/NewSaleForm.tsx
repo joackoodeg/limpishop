@@ -27,7 +27,7 @@ import { Loader2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { getUnitLabel, formatStock } from '@/lib/units';
 import { useStoreConfig } from '@/app/components/StoreConfigProvider';
-import { cn } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import type { Product } from '@/lib/data/products';
 import type { ActiveEmployee } from '@/lib/data/employees';
 import type { Combo, ComboProduct } from '@/lib/data/combos';
@@ -118,7 +118,7 @@ function ProductCard({
               {product.prices.map((variant, index) => (
                 <SelectItem key={index} value={String(index)} className="text-xs">
                   {variant.quantity} {getUnitLabel(product.unit || 'unidad', variant.quantity)} —
-                  ${variant.price}
+                  {formatPrice(variant.price)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -200,7 +200,7 @@ function CartItemRow({
           {item.discountType && item.discountPercent > 0 ? (
             <div className="mt-1">
               <div className="text-xs line-through text-muted-foreground">
-                ${(item.price * item.quantity).toFixed(2)}
+                {formatPrice(item.price * item.quantity)}
               </div>
               <div
                 className={cn(
@@ -208,12 +208,12 @@ function CartItemRow({
                   item.discountType === 'descuento' ? 'text-red-600' : 'text-blue-600',
                 )}
               >
-                ${(effectivePrice * item.quantity).toFixed(2)}
+                {formatPrice(effectivePrice * item.quantity)}
               </div>
             </div>
           ) : (
             <div className="font-medium text-sm mt-1">
-              ${(effectivePrice * item.quantity).toFixed(2)}
+              {formatPrice(effectivePrice * item.quantity)}
             </div>
           )}
         </div>
@@ -299,9 +299,9 @@ function ComboCard({
         {combo.products.map((p) => `${p.productName} ×${p.quantity}`).join(' · ')}
       </p>
       {combo.discountPercentage > 0 && (
-        <p className="text-xs line-through text-muted-foreground">${combo.originalPrice.toFixed(2)}</p>
+        <p className="text-xs line-through text-muted-foreground">{formatPrice(combo.originalPrice)}</p>
       )}
-      <p className="text-sm font-semibold text-emerald-600 mb-2">${combo.finalPrice.toFixed(2)}</p>
+      <p className="text-sm font-semibold text-emerald-600 mb-2">{formatPrice(combo.finalPrice)}</p>
       <Button size="sm" className="w-full" onClick={onAdd}>
         Agregar Combo
       </Button>
@@ -359,7 +359,7 @@ function ComboCartItemRow({
         <div>
           <Label className="text-xs">Precio:</Label>
           <div className="h-8 flex items-center justify-center font-medium text-sm">
-            ${item.finalPrice.toFixed(2)}
+            {formatPrice(item.finalPrice)}
           </div>
         </div>
         <div className="text-center">
@@ -367,7 +367,7 @@ function ComboCartItemRow({
           {item.discountType && item.discountPercent > 0 ? (
             <div className="mt-1">
               <div className="text-xs line-through text-muted-foreground">
-                ${(item.finalPrice * item.quantity).toFixed(2)}
+                {formatPrice(item.finalPrice * item.quantity)}
               </div>
               <div
                 className={cn(
@@ -375,12 +375,12 @@ function ComboCartItemRow({
                   item.discountType === 'descuento' ? 'text-red-600' : 'text-blue-600',
                 )}
               >
-                ${(effectivePrice * item.quantity).toFixed(2)}
+                {formatPrice(effectivePrice * item.quantity)}
               </div>
             </div>
           ) : (
             <div className="font-medium text-sm mt-1">
-              ${(effectivePrice * item.quantity).toFixed(2)}
+              {formatPrice(effectivePrice * item.quantity)}
             </div>
           )}
         </div>
@@ -595,7 +595,7 @@ function DiscountModal({ open, onOpenChange, cart, comboCart, onApply, onClear }
               <div className="flex-1 min-w-0">
                 <span className="text-sm truncate block">{item.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  ${item.price.toFixed(2)} × {item.quantity}
+                  {formatPrice(item.price)} × {item.quantity}
                   {item.discountType && item.discountPercent > 0 && (
                     <span
                       className={cn(
@@ -626,7 +626,7 @@ function DiscountModal({ open, onOpenChange, cart, comboCart, onApply, onClear }
                   {item.comboName}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  ${item.finalPrice.toFixed(2)} × {item.quantity}
+                  {formatPrice(item.finalPrice)} × {item.quantity}
                   {item.discountType && item.discountPercent > 0 && (
                     <span
                       className={cn(
@@ -945,7 +945,7 @@ export default function NewSaleForm({ products, employees, combos }: NewSaleForm
               />
             ) : (
               <span className="text-xl font-bold text-emerald-600">
-                ${getFinalTotal().toFixed(2)}
+                {formatPrice(getFinalTotal())}
               </span>
             )}
             <Button size="sm" variant="outline" onClick={handleTotalEdit}>
@@ -1021,7 +1021,7 @@ export default function NewSaleForm({ products, employees, combos }: NewSaleForm
               Procesando venta...
             </>
           ) : (
-            <>Finalizar Venta — ${getFinalTotal().toFixed(2)}</>
+            <>Finalizar Venta — {formatPrice(getFinalTotal())}</>
           )}
         </Button>
       </div>

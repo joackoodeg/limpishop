@@ -12,24 +12,24 @@ Es una plataforma pensada para **negocios locales** que necesitan controlar vent
 
 ## ¿Qué ofrece?
 
-- ✅ **Gestión de ventas** rápida y clara
-- ✅ **Control de stock en tiempo real**
-- ✅ **Catálogo de productos y categorías** ordenado
-- ✅ **Manejo de combos/promociones**
-- ✅ **Registro y control de caja**
-- ✅ **Gestión de empleados y roles**
-- ✅ **Reportes y resumen del negocio** para tomar mejores decisiones
-- ✅ **Carga de imágenes de productos** para un catálogo más profesional
+- Gestión de ventas rápida y clara
+- Control de stock en tiempo real
+- Catálogo de productos y categorías ordenado
+- Manejo de combos/promociones
+- Registro y control de caja
+- Gestión de empleados y roles  
+- Reportes y resumen del negocio para tomar mejores decisiones
+- Carga de imágenes de productos para un catálogo más profesional
 
 ---
 
 ## Beneficios para tu negocio
 
 - 💸 **Menos pérdidas por faltantes o errores de stock**
-- ⏱️ **Ahorro de tiempo en tareas diarias**
-- 📈 **Más control para crecer con datos reales**
-- 😊 **Mejor atención al cliente**, con procesos más ágiles
-- 🔒 **Información centralizada y segura**
+- Ahorro de tiempo en tareas diarias
+- Más control para crecer con datos reales
+- Mejor atención al cliente, con procesos más ágiles
+- Información centralizada y segura
 
 ---
 

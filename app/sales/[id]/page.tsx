@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getBaseUrl } from '@/lib/server-api';
 import SaleDetailContent from './SaleDetailContent';
+import { formatPrice } from '@/lib/utils';
 import type { Sale } from '@/lib/data/sales';
 
 type Props = {
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const sale: Sale = await res.json();
   return {
     title: `Venta #${sale.id}`,
-    description: `Detalle de venta del ${sale.date ? new Date(sale.date).toLocaleDateString() : ''} — $${sale.grandTotal?.toFixed(2) ?? ''}`,
+    description: `Detalle de venta del ${sale.date ? new Date(sale.date).toLocaleDateString() : ''} — ${formatPrice(sale.grandTotal ?? 0)}`,
   };
 }
 

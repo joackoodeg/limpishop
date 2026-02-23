@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PageHeader from './PageHeader';
 import StatusBadge from './StatusBadge';
+import { formatPrice } from '@/lib/utils';
 import type { Combo } from '@/lib/data/combos';
 
 interface ComboDetailContentProps {
@@ -70,7 +71,7 @@ export function ComboDetailContent({ combo }: ComboDetailContentProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div className="p-4 bg-muted rounded-lg">
                 <div className="text-2xl font-bold">
-                  ${combo.originalPrice?.toFixed(2)}
+                  {formatPrice(combo.originalPrice ?? 0)}
                 </div>
                 <div className="text-sm text-muted-foreground">Precio Original</div>
               </div>
@@ -82,7 +83,7 @@ export function ComboDetailContent({ combo }: ComboDetailContentProps) {
               </div>
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
                 <div className="text-2xl font-bold text-emerald-600">
-                  ${combo.finalPrice?.toFixed(2)}
+                  {formatPrice(combo.finalPrice ?? 0)}
                 </div>
                 <div className="text-sm text-emerald-800">Precio Final</div>
               </div>
@@ -91,7 +92,7 @@ export function ComboDetailContent({ combo }: ComboDetailContentProps) {
             {savings > 0 && (
               <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
                 <p className="text-emerald-800 font-medium">
-                  ¡Ahorro de ${savings.toFixed(2)} con este combo!
+                  ¡Ahorro de {formatPrice(savings)} con este combo!
                 </p>
               </div>
             )}
@@ -112,7 +113,7 @@ export function ComboDetailContent({ combo }: ComboDetailContentProps) {
                   <div>
                     <h4 className="font-medium">{product.productName}</h4>
                     <p className="text-sm text-muted-foreground">
-                      Precio: ${product.price?.toFixed(2)}
+                      Precio: {formatPrice(product.price ?? 0)}
                     </p>
                   </div>
                   <div className="text-center">
@@ -122,7 +123,7 @@ export function ComboDetailContent({ combo }: ComboDetailContentProps) {
                     </div>
                   </div>
                   <div className="text-right font-semibold">
-                    ${(product.price * product.quantity).toFixed(2)}
+                    {formatPrice(product.price * product.quantity)}
                   </div>
                 </div>
               ))}

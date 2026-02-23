@@ -20,11 +20,7 @@ interface CajaDetailPageProps {
 }
 
 function fmt(n: number) {
-  return n.toLocaleString('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 2,
-  });
+  return `$${Math.round(n).toLocaleString('es-AR')}`;
 }
 
 function fmtDate(d: string) {

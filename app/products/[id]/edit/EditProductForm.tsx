@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import PageHeader from '../../../components/PageHeader';
 import { getAvailableUnitOptions, getUnitLabel, getUnitShort, getStockStep } from '@/lib/units';
 import { useStoreConfig } from '@/app/components/StoreConfigProvider';
+import { formatPrice } from '@/lib/utils';
 import { ArrowRight, ArrowLeft, Loader2, Package, DollarSign, Ruler, Scale, Droplet, Boxes, Tag, Truck } from 'lucide-react';
 
 interface Supplier { id: number; name: string; }
@@ -306,7 +307,7 @@ export default function EditProductForm({
                     <strong>{unitOptions.find((o) => o.value === unit)?.label}</strong>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Costo:</span> <strong>${cost}</strong>
+                    <span className="text-muted-foreground">Costo:</span> <strong>{formatPrice(Number(cost))}</strong>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Stock:</span>{' '}
@@ -384,9 +385,8 @@ export default function EditProductForm({
                         const marginPct = totalCost > 0 ? ((margin / totalCost) * 100).toFixed(1) : '—';
                         return (
                           <p key={i} className="text-green-600 dark:text-green-300">
-                            {p.quantity} {getUnitLabel(unit, Number(p.quantity))} → ${p.price} (costo: $
-                            {totalCost.toFixed(2)}, margen: {margin >= 0 ? '+' : ''}
-                            {margin.toFixed(2)} / {marginPct}%)
+                            {p.quantity} {getUnitLabel(unit, Number(p.quantity))} → {formatPrice(Number(p.price))} (costo: {formatPrice(totalCost)}, margen: {margin >= 0 ? '+' : ''}
+                            {formatPrice(margin)} / {marginPct}%)
                           </p>
                         );
                       })}
